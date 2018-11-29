@@ -1976,7 +1976,7 @@ void UMaterial3::GetParams(CMaterialParams &Params) const
 
 	Super::GetParams(Params);
 
-	int DiffWeight = 0, NormWeight = 0, SpecWeight = 0, SpecPowWeight = 0, OpWeight = 0, EmWeight = 0, CubeWeight = 0;
+	int DiffWeight = 0, NormWeight = 0, SpecWeight = 0, SpecPowWeight = 0, OpWeight = 0, EmWeight = 0, CubeWeight = 0, OcclWeight = 0, RmWeight = 0;
 #define DIFFUSE(check,weight)			\
 	if (weight > DiffWeight && check)	\
 	{									\
@@ -2040,6 +2040,22 @@ void UMaterial3::GetParams(CMaterialParams &Params) const
 		Params.EmissiveColor = Color;	\
 		EmcWeight = weight;				\
 	}
+#define OCCLUSION(check,weight)			\
+	if (check && weight >= OcclWeight)	\
+	{									\
+	/*	DrawTextLeft("OCC: %d > %d = %s", weight, OcclWeight, Tex->Name); */ \
+		Params.Occlusion = Tex;			\
+		OcclWeight = weight;			\
+	}
+// roughness/metallic?
+#define MATERIAL(check,weight)			\
+	if (check && weight >= RmWeight)	\
+	{									\
+	/*	DrawTextLeft("RM: %d > %d = %s", weight, RmWeight, Tex->Name); */ \
+		Params.Material = Tex;			\
+		RmWeight = weight;			\
+	}
+
 
 	int ArGame = GetGame();
 
@@ -2427,7 +2443,7 @@ void UMaterialInstanceConstant::GetParams(CMaterialParams &Params) const
 	CMaterialParams ParemtParams = Params;
 
 	// get local parameters
-	int DiffWeight = 0, NormWeight = 0, SpecWeight = 0, SpecPowWeight = 0, OpWeight = 0, EmWeight = 0, EmcWeight = 0, CubeWeight = 0, MaskWeight = 0;
+	int DiffWeight = 0, NormWeight = 0, SpecWeight = 0, SpecPowWeight = 0, OpWeight = 0, EmWeight = 0, EmcWeight = 0, CubeWeight = 0, MaskWeight = 0, OcclWeight = 0, RmWeight = 0;
 
 	if (TextureParameterValues.Num())
 		Params.Opacity = NULL;			// it's better to disable opacity mask from parent material
@@ -2443,6 +2459,8 @@ void UMaterialInstanceConstant::GetParams(CMaterialParams &Params) const
 		appStrncpylwr(Name, P.GetName(), ARRAY_COUNT(Name));
 		UTexture3  *Tex  = P.ParameterValue;
 		if (!Tex) continue;
+		const char *TexName = Tex->GetPackageName();
+		int len = strlen(TexName);
 
 		if (strstr(Name, "detail")) continue;	// details normal etc
 		if (strstr(Name, "gradient")) continue; // emissive gradient etc
@@ -2454,12 +2472,19 @@ void UMaterialInstanceConstant::GetParams(CMaterialParams &Params) const
 		SPECPOW (strstr(Name, "specpow"), 100);
 		SPECULAR(strstr(Name, "spec"), 100);
 		EMISSIVE(strstr(Name, "emiss"), 100);
+		// misspellings in PUBG... oh boy ("Emmisive")
+		EMISSIVE(appStristr(Name, "emmis"), 90);
 		CUBEMAP (strstr(Name, "cube"), 100);
 		CUBEMAP (strstr(Name, "refl"), 90);
 		OPACITY (strstr(Name, "opac"), 90);
 		OPACITY (strstr(Name, "trans") && !strstr(Name, "transm"), 80);
 		OPACITY (strstr(Name, "opacity"), 100);
 		OPACITY (strstr(Name, "alpha"), 100);
+		OCCLUSION (!stricmp(Name, "AO"), 75);
+		OCCLUSION(appStristr(Name, "occlu"), 80);
+		MATERIAL(!stricmp(Name, "material"), 70);
+		MATERIAL(!stricmp(Name, "RM"), 75);
+		BAKEDMASK(!stricmp(Name, "M"), 75); // fortnite
 //??		OPACITY (strstr(Name, "mask"), 100);
 //??		Params.OpacityFromAlpha = true;
 #if TRON
@@ -2490,6 +2515,27 @@ void UMaterialInstanceConstant::GetParams(CMaterialParams &Params) const
 			EMISSIVE(strstr(Name, "cubemap_mask"), 100);
 		}
 #endif // DISHONORED
+
+		// From texture name (UMaterial3::GetParams):
+		DIFFUSE(!stricmp(TexName + len - 4, "_Tex"), 30);
+		DIFFUSE(appStristr(TexName, "_Tex"), 25);
+		DIFFUSE(!stricmp(TexName + len - 2, "_D"), 20);
+		OPACITY(appStristr(TexName, "_OM"), 20);
+		DIFFUSE (appStristr(TexName, "Albedo"), 19);
+		NORMAL  (!stricmp(TexName + len - 2, "_N"), 20);
+		NORMAL  (!stricmp(TexName + len - 3, "_NM"), 20);
+		NORMAL  (appStristr(TexName, "_N"), 9);
+		EMISSIVE(!stricmp(TexName + len - 2, "_E"), 20);
+		EMISSIVE(!stricmp(TexName + len - 3, "_EM"), 21);
+		SPECULAR(!stricmp(TexName + len - 2, "_S"), 20);
+		SPECPOW (!stricmp(TexName + len - 3, "_SP"), 20);
+		SPECPOW (!stricmp(TexName + len - 3, "_SM"), 20);
+		EMISSIVE(!stricmp(TexName + len - 2, "_E"), 20);
+		EMISSIVE(!stricmp(TexName + len - 3, "_EM"), 21);
+		OPACITY (!stricmp(TexName + len - 2, "_A"), 20);
+		OCCLUSION(!stricmp(TexName + len - 3, "_AO"), 20);
+		MATERIAL(!stricmp(TexName + len - 3, "_RM"), 20);
+		BAKEDMASK(!stricmp(TexName + len - 2, "_M"), 20);
 #if UNREAL4
 		if (ArGame >= GAME_UE4_BASE)
 		{
