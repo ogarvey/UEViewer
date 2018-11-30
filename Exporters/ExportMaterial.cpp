@@ -63,6 +63,8 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 	PROC(Emissive);
 	PROC(Cube);
 	PROC(Mask);
+	PROC(Occlusion);
+	PROC(Material);
 
 	// Dump material properties to a separate file
 	FArchive* PropAr = CreateExportArchive(Mat, EFileArchiveOptions::TextFile, "%s.props.txt", Mat->Name);
