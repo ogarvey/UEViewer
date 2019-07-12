@@ -932,14 +932,12 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 		MaterialIndices& info = Materials[i];
 		char dummyName[64];
 		appSprintf(ARRAY_ARG(dummyName), "dummy_material_%d", i);
-		CVec3 Color = (info.DiffuseIndex < 0) ? GetMaterialDebugColor(i) : CVec3{1.f,1.f,1.f};
+
 		Ar.Printf(
 			"    {\n"
 			"      \"name\" : \"%s\",\n"
-			"      \"pbrMetallicRoughness\" : {\n"
-			"        \"baseColorFactor\" : [ %g, %g, %g, 1.0 ],\n",
-			Mat ? Mat->Name : dummyName,
-			Color[0], Color[1], Color[2]
+			"      \"pbrMetallicRoughness\" : {\n",
+			Mat ? Mat->Name : dummyName
 		);
 
 		if (info.MaterialIndex >= 0)
@@ -971,6 +969,16 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 				info.DiffuseIndex, 0
 			);
 		}
+		else
+		{
+			CVec3 Color = GetMaterialDebugColor(i);
+			Ar.Printf(
+				",\n"
+				"        \"baseColorFactor\" : [ %1.9g, %1.9g, %1.9g, 1.0 ]\n",
+				Color[0], Color[1], Color[2]
+			);
+		}
+
 		Ar.Printf("\n      }");
 		// end of pbrMetallicRoughness
 
