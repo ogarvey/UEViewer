@@ -415,7 +415,7 @@ static void CollectProps(const CTypeInfo *Type, const void *Data, CPropDump &Dum
 						{
 							char ObjName[256];
 							obj->GetFullName(ARRAY_ARG(ObjName));
-							PD2->PrintValue("%s'%s'", obj->GetClassName(), ObjName);
+							PD2->PrintValue("%s'%s.%s'", obj->GetClassName(), obj->GetPackageName(), ObjName);
 						}
 						else
 						{

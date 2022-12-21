@@ -19,13 +19,11 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 	if (Mat->IsTextureCube())
 	{
 		ExportCubemap(Mat);
-		return;
 	}
 
 	if (Mat->IsTexture())
 	{
 		ExportTexture(Mat);
-		return;
 	}
 
 	//todo: handle Mat->IsTexture(), Mat->IsTextureCube() to select exporter code
@@ -39,8 +37,8 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 	if ((Params.IsNull() || Params.Diffuse == Mat) && AllTextures.Num() == 0)
 	{
 		// empty/unknown material, or material itself is a texture
-		appPrintf("Ignoring %s'%s' due to empty parameters\n", Mat->GetClassName(), Mat->Name);
-		return;
+		// appPrintf("Ignoring %s'%s' due to empty parameters\n", Mat->GetClassName(), Mat->Name);
+		// return;
 	}
 
 	FArchive* Ar = CreateExportArchive(Mat, EFileArchiveOptions::TextFile, "%s.mat", Mat->Name);
