@@ -265,6 +265,10 @@ class UConstantMaterial : public URenderedMaterial
 	DECLARE_CLASS(UConstantMaterial, URenderedMaterial);
 };
 
+class UVertexColor : public URenderedMaterial
+{
+	DECLARE_CLASS(UVertexColor, URenderedMaterial);
+};
 
 class UConstantColor : public UConstantMaterial
 {
@@ -1365,7 +1369,8 @@ public:
 	REGISTER_CLASS(UTexOscillator)		\
 	REGISTER_CLASS(UTexPanner)			\
 	REGISTER_CLASS(UTexRotator)			\
-	REGISTER_CLASS(UTexScaler)
+	REGISTER_CLASS(UTexScaler)			\
+	REGISTER_CLASS(UVertexColor)
 
 #define REGISTER_MATERIAL_CLASSES_BIO	\
 	REGISTER_CLASS(FMaskMaterial)		\
