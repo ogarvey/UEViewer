@@ -152,7 +152,7 @@ function ProcessShaderFiles()
 		fi
 		# build shaders
 		#?? move this command to makefile
-		Unreal/Shaders/make.pl
+		perl -w Unreal/Shaders/make.pl
 	fi
 }
 
@@ -179,7 +179,7 @@ function GenerateMakefile()
 
 	# update makefile when needed
 	# [ $makefile -ot $project ] &&
-	$root/Tools/genmake $project.project TARGET=$PLATFORM $GENMAKE_OPTIONS > $makefile
+	perl -w $root/Tools/genmake $project.project TARGET=$PLATFORM $GENMAKE_OPTIONS > $makefile
 }
 
 
