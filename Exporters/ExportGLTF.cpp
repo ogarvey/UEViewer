@@ -41,7 +41,7 @@ static void ExportMaterial(UUnrealMaterial* Mat, FArchive& Ar, int index, bool b
 		"    {\n"
 		"      \"name\" : \"%s\",\n"
 		"      \"pbrMetallicRoughness\" : {\n"
-		"        \"baseColorFactor\" : [ %g, %g, %g, 1.0 ],\n"
+		"        \"baseColorFactor\" : [ %1.9g, %1.9g, %1.9g, 1.0 ],\n"
 		"        \"metallicFactor\" : 0.1,\n"
 		"        \"roughnessFactor\" : 0.5\n"
 		"      }\n"
@@ -358,9 +358,9 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 	CVec3 Mins, Maxs;
 	ComputeBounds((CVec3*)PositionBuf.Data, numLocalVerts, sizeof(CVec3), Mins, Maxs);
 	char buf[256];
-	appSprintf(ARRAY_ARG(buf), "[ %g, %g, %g ]", VECTOR_ARG(Mins));
+	appSprintf(ARRAY_ARG(buf), "[ %1.9g, %1.9g, %1.9g ]", VECTOR_ARG(Mins));
 	PositionBuf.BoundsMin = buf;
-	appSprintf(ARRAY_ARG(buf), "[ %g, %g, %g ]", VECTOR_ARG(Maxs));
+	appSprintf(ARRAY_ARG(buf), "[ %1.9g, %1.9g, %1.9g ]", VECTOR_ARG(Maxs));
 	PositionBuf.BoundsMax = buf;
 
 	if (Lod.VertexColors)
@@ -547,8 +547,8 @@ static void ExportSkinData(GLTFExportContext& Context, const CSkelMeshLod& Lod, 
 		TransformRotation(boneRot);
 
 		Ar.Printf(
-			"      \"translation\" : [ %g, %g, %g ],\n"
-			"      \"rotation\" : [ %g, %g, %g, %g ]\n",
+			"      \"translation\" : [ %1.9g, %1.9g, %1.9g ],\n"
+			"      \"rotation\" : [ %1.9g, %1.9g, %1.9g, %1.9g ]\n",
 			bonePos[0], bonePos[1], bonePos[2],
 			boneRot.X, boneRot.Y, boneRot.Z, boneRot.W
 		);
@@ -761,7 +761,7 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 			// Prepare min/max values for time track, it's required by glTF standard
 			TimeBuf.BoundsMin = "[ 0 ]";
 			char buf[64];
-			appSprintf(ARRAY_ARG(buf), "[ %g ]", LastFrameTime * RateScale);
+			appSprintf(ARRAY_ARG(buf), "[ %1.9g ]", LastFrameTime * RateScale);
 			TimeBuf.BoundsMax = buf;
 
 			// Try to reuse TimeBuf from previous tracks
