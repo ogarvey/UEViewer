@@ -2467,6 +2467,8 @@ void UMaterialInstanceConstant::GetParams(CMaterialParams &Params) const
 
 		DIFFUSE (strstr(Name, "dif"), 100);
 		DIFFUSE (strstr(Name, "albedo"), 100);
+		MATERIAL (strstr(Name, "roughness"), 100);
+		MATERIAL (strstr(Name, "metallic"), 100);
 		DIFFUSE (strstr(Name, "color"), 80);
 		NORMAL  (strstr(Name, "norm") && !strstr(Name, "fx"), 100);
 		SPECPOW (strstr(Name, "specpow"), 100);
