@@ -948,8 +948,8 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 		else
 		{
 			Ar.Printf(
-				"        \"metallicFactor\" : 0.5,\n"
-				"        \"roughnessFactor\" : 0.5"
+				"        \"metallicFactor\" : 0.0,\n"
+				"        \"roughnessFactor\" : 1.0"
 			);
 		}
 
