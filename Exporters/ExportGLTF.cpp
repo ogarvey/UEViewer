@@ -853,13 +853,9 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 	#define PROC(Arg) \
 		if (Params.Arg) \
 		{ \
-			const char *filename = GetExportFileName(OriginalMesh, "%s_export/%s.png", OriginalMesh->Name, Params.Arg->GetPackageName()); \
+			const char *filename = GetExportFileName(OriginalMesh, "%s.png", Params.Arg->Name); \
 			int index = Images.Add(filename); \
 			info.Arg ## Index = index; \
-			appPrintf("Writing texture %s...\n", filename); \
-			FArchive* out = CreateExportArchive(OriginalMesh, EFileArchiveOptions::Default, "%s_export/%s.png", OriginalMesh->Name, Params.Arg->GetPackageName()); \
-			ExportTexturePNGArchive(Params.Arg, *out); \
-			delete out; \
 		}
 	TArray<MaterialIndices> Materials;
 	TArray<FString> Images;
