@@ -854,6 +854,7 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 #else
 	const UObject* OriginalMesh = Context.IsSkeletal() ? Context.SkelMesh->OriginalMesh : Context.StatMesh->OriginalMesh;
 	// Collect texture info
+	// TODO: Assumes all textures are in local directory; Viewers don't seem to support paths with ".."; export again to local?
 	#define PROC(Arg) \
 		if (Params.Arg) \
 		{ \
