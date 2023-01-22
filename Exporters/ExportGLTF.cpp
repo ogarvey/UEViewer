@@ -806,6 +806,8 @@ struct MaterialIndices
 	int EmissiveIndex;
 	int OcclusionIndex;
 	int MaterialIndex;
+	int SpecularIndex;
+	int SpecPowerIndex;
 
 	MaterialIndices()
 	: DiffuseIndex(-1)
@@ -813,6 +815,8 @@ struct MaterialIndices
 	, EmissiveIndex(-1)
 	, OcclusionIndex(-1)
 	, MaterialIndex(-1)
+	, SpecularIndex(-1)
+	, SpecPowerIndex(-1)
 	{}
 };
 
@@ -823,6 +827,7 @@ struct MaterialIndices
 #define EXPORT_GLTF_MATERIAL_EMISSIVE	1
 #define EXPORT_GLTF_MATERIAL_AO			1
 #define EXPORT_GLTF_MATERIAL_ROUGHMET	1
+#define EXPORT_GLTF_MATERIAL_SPECULAR	1
 
 
 static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBaseMeshLod& Lod)
@@ -889,6 +894,10 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 #if EXPORT_GLTF_MATERIAL_ROUGHMET
 		PROC(Material);
 #endif
+#if EXPORT_GLTF_MATERIAL_SPECULAR
+		PROC(Specular);
+		PROC(SpecPower);
+#endif
 	}
 	unguard;
 	#undef PROC
@@ -927,6 +936,7 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 	unguard;
 
 	Ar.Printf("  \"materials\" : [\n");
+	bool usedSpecularAndIOR = false;
 	for (int i = 0; i < Lod.Sections.Num(); i++)
 	{
 		const UUnrealMaterial* Mat = Lod.Sections[i].Material;
@@ -1026,9 +1036,51 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 			);
 		}
 
+		if (info.SpecularIndex >= 0 || info.SpecPowerIndex >= 0)
+		{
+			usedSpecularAndIOR = true;
+			Ar.Printf(
+				",\n"
+            	"      \"extensions\": {\n"
+                "        \"KHR_materials_specular\": {\n"
+			);
+			if (info.SpecularIndex >= 0)
+			{
+				Ar.Printf(
+					"          \"specularColorTexture\": %d\n",
+					info.SpecularIndex
+				);
+			}
+			else
+			{
+				// TODO: This use of SpecPower is based on UnRenderer.cpp. I'm not sure it is correct.
+				// It probably also doesn't use the correct channel.
+				Ar.Printf(
+					"          \"specularTexture\": %d\n",
+					info.SpecPowerIndex
+				);
+			}
+			Ar.Printf(
+                "        },\n"
+                "        \"KHR_materials_ior\": {\n"
+                "          \"ior\": 0\n"
+                "        }\n"
+            	"      }"
+			);
+		}
+
 		Ar.Printf("\n    }%s\n", i == Lod.Sections.Num() - 1 ? "" : ",");
 	}
 	Ar.Printf("  ],\n");
+
+	if (usedSpecularAndIOR)
+	{
+		Ar.Printf(
+			"  \"extensionsUsed\" : [\n"
+			"    \"KHR_materials_specular,\"\n"
+			"    \"KHR_materials_ior,\"\n"
+			"  ],\n");
+	}
 #endif
 	unguard;
 }
