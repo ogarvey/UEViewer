@@ -1047,8 +1047,12 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 			if (info.SpecularIndex >= 0)
 			{
 				Ar.Printf(
-					"          \"specularColorTexture\": %d\n",
-					info.SpecularIndex
+					"          \"specularColorTexture\": {\n"
+					"            \"index\" : %d,\n"
+					"            \"texCoord\" : %d\n"
+					"          }",
+					info.SpecularIndex,
+					0
 				);
 			}
 			else
@@ -1056,8 +1060,12 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 				// TODO: This use of SpecPower is based on UnRenderer.cpp. I'm not sure it is correct.
 				// It probably also doesn't use the correct channel.
 				Ar.Printf(
-					"          \"specularTexture\": %d\n",
-					info.SpecPowerIndex
+					"          \"specularTexture\": {\n"
+					"            \"index\" : %d,\n"
+					"            \"texCoord\" : %d\n"
+					"          }",
+					info.SpecPowerIndex,
+					0
 				);
 			}
 			Ar.Printf(
@@ -1077,8 +1085,8 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 	{
 		Ar.Printf(
 			"  \"extensionsUsed\" : [\n"
-			"    \"KHR_materials_specular,\"\n"
-			"    \"KHR_materials_ior,\"\n"
+			"    \"KHR_materials_specular\",\n"
+			"    \"KHR_materials_ior\",\n"
 			"  ],\n");
 	}
 #endif
