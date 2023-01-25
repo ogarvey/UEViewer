@@ -1086,7 +1086,7 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 		Ar.Printf(
 			"  \"extensionsUsed\" : [\n"
 			"    \"KHR_materials_specular\",\n"
-			"    \"KHR_materials_ior\",\n"
+			"    \"KHR_materials_ior\"\n"
 			"  ],\n");
 	}
 #endif
