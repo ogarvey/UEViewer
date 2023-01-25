@@ -864,7 +864,7 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 		if (Params.Arg) \
 		{ \
 			const char *filename = GetExportFileName(OriginalMesh, "%s.png", Params.Arg->Name); \
-			int index = Images.Add(filename); \
+			int index = Images.AddUnique(filename); \
 			info.Arg ## Index = index; \
 		}
 	TArray<MaterialIndices> Materials;
