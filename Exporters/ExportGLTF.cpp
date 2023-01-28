@@ -636,7 +636,8 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 			enum ChannelType
 			{
 				TRANSLATION,
-				ROTATION
+				ROTATION,
+				SCALE
 			};
 
 			int BoneNodeIndex;
@@ -644,8 +645,14 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 			const CAnimTrack* Track;
 		};
 
+#if SUPPORT_SCALE_KEYS
+		constexpr int samplersPerBone = 3;
+#else
+		constexpr int samplersPerBone = 2;
+#endif
+
 		TArray<AnimSampler> Samplers;
-		Samplers.Empty(AnimBones.Num() * 2);
+		Samplers.Empty(AnimBones.Num() * samplersPerBone);
 
 		//!! Optimization:
 		//!! 1. there will be missing tracks (AnimRotationOnly etc) - drop such samplers
@@ -679,6 +686,18 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 			Sampler->BoneNodeIndex = MeshBoneIndex + FIRST_BONE_NODE;
 			Sampler->Track = Track;
 
+#if SUPPORT_SCALE_KEYS
+			int ScaleSamplerIndex = -1;
+			if (Track->KeyScale.Num() > 0)
+			{
+				ScaleSamplerIndex = Samplers.Num();
+				Sampler = new (Samplers) AnimSampler;
+				Sampler->Type = AnimSampler::SCALE;
+				Sampler->BoneNodeIndex = MeshBoneIndex + FIRST_BONE_NODE;
+				Sampler->Track = Track;
+			}
+#endif
+
 			if (bHasOutput)
 			{
 				Ar.Printf(",\n");
@@ -693,6 +712,16 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 				"        { \"sampler\" : %d, \"target\" : { \"node\" : %d, \"path\" : \"%s\" } }",
 				RotationSamplerIndex, MeshBoneIndex + FIRST_BONE_NODE, "rotation"
 			);
+#if SUPPORT_SCALE_KEYS
+			if (ScaleSamplerIndex >= 0)
+			{
+				Ar.Printf(
+					",\n"
+					"        { \"sampler\" : %d, \"target\" : { \"node\" : %d, \"path\" : \"%s\" } }",
+					ScaleSamplerIndex, MeshBoneIndex + FIRST_BONE_NODE, "scale"
+				);
+			}
+#endif
 			bHasOutput = true;
 		}
 
@@ -709,13 +738,25 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 			const AnimSampler& Sampler = Samplers[SamplerIndex];
 
 			// Prepare time array
-			const TArray<float>* TimeArray = (Sampler.Type == AnimSampler::TRANSLATION) ? &Sampler.Track->KeyPosTime : &Sampler.Track->KeyQuatTime;
+			const TArray<float>* TimeArray = (Sampler.Type != AnimSampler::ROTATION) ? &Sampler.Track->KeyPosTime : &Sampler.Track->KeyQuatTime;
 			if (TimeArray->Num() == 0)
 			{
 				// For this situation, use track's time array
 				TimeArray = &Sampler.Track->KeyTime;
 			}
-			int NumKeys = Sampler.Type == (AnimSampler::TRANSLATION) ? Sampler.Track->KeyPos.Num() : Sampler.Track->KeyQuat.Num();
+			int NumKeys;
+			switch (Sampler.Type)
+			{
+			case AnimSampler::TRANSLATION:
+				NumKeys = Sampler.Track->KeyPos.Num();
+				break;
+			case AnimSampler::ROTATION:
+				NumKeys = Sampler.Track->KeyQuat.Num();
+				break;
+			case AnimSampler::SCALE:
+				NumKeys = Sampler.Track->KeyScale.Num();
+				break;
+			}
 
 			int TimeBufIndex = Context.Data.AddZeroed();
 			BufferData& TimeBuf = Context.Data[TimeBufIndex];
@@ -753,8 +794,9 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 			// Prepare data
 			int DataBufIndex = Context.Data.AddZeroed();
 			BufferData& DataBuf = Context.Data[DataBufIndex];
-			if (Sampler.Type == AnimSampler::TRANSLATION)
+			switch (Sampler.Type)
 			{
+			case AnimSampler::TRANSLATION:
 				// Translation track
 				DataBuf.Setup(NumKeys, "VEC3", BufferData::FLOAT, sizeof(CVec3));
 				for (int i = 0; i < NumKeys; i++)
@@ -763,9 +805,8 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 					TransformPosition(Pos);
 					DataBuf.Put(Pos);
 				}
-			}
-			else
-			{
+				break;
+			case AnimSampler::ROTATION:
 				// Rotation track
 				DataBuf.Setup(NumKeys, "VEC4", BufferData::FLOAT, sizeof(CQuat));
 				for (int i = 0; i < NumKeys; i++)
@@ -778,6 +819,18 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 					}
 					DataBuf.Put(Rot);
 				}
+				break;
+#if SUPPORT_SCALE_KEYS
+			case AnimSampler::SCALE:
+				// Scale track
+				DataBuf.Setup(NumKeys, "VEC3", BufferData::FLOAT, sizeof(CVec3));
+				for (int i = 0; i < NumKeys; i++)
+				{
+					CVec3 Scale = Sampler.Track->KeyScale[i];
+					DataBuf.Put(Scale);
+				}
+				break;
+#endif
 			}
 
 			// Try to reuse data block as well
