@@ -10,7 +10,8 @@
 class UMaterialInterface;
 class UAnimSequence4;
 
-#define NUM_INFLUENCES_UE4				4
+#define NUM_INFLUENCES_UE4				8
+#define NUM_INFLUENCES_UE4_OLD			4
 #define MAX_TOTAL_INFLUENCES_UE4		8
 #define MAX_SKELETAL_UV_SETS_UE4		4
 #define MAX_STATIC_UV_SETS_UE4			8

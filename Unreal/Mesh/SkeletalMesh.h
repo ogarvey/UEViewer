@@ -30,25 +30,28 @@ TODO:
 
 
 #define MAX_MESHBONES				(1024*3)		// NGD had a mesh with ~2100 bones! (basepose_0000.uasset)
-#define NUM_INFLUENCES				4
+#define NUM_INFLUENCES				8
+#if NUM_INFLUENCES % 4 != 0
+#error NUM_INFLUENCES must be multiple of 4
+#endif
 #define SUPPORT_SCALE_KEYS			1
 //#define ANIM_DEBUG_INFO				1
 
 struct CSkelMeshVertex : public CMeshVertex
 {
-	uint32					PackedWeights;			// Works with 4 weights only!
+	uint32					PackedWeights[NUM_INFLUENCES / 4];
 	int16					Bone[NUM_INFLUENCES];	// Bone < 0 - end of list
 
-	void UnpackWeights(CVec4& OutWeights) const
+	void UnpackWeights(CVec4& OutWeights, int idx) const
 	{
 #if USE_SSE
-		OutWeights.mm = UnpackPackedBytes(PackedWeights);
+		OutWeights.mm = UnpackPackedBytes(PackedWeights[idx]);
 #else
 		float Scale = 1.0f / 255;
-		OutWeights.v[0] =  (PackedWeights        & 0xFF) * Scale;
-		OutWeights.v[1] = ((PackedWeights >> 8 ) & 0xFF) * Scale;
-		OutWeights.v[2] = ((PackedWeights >> 16) & 0xFF) * Scale;
-		OutWeights.v[3] = ((PackedWeights >> 24) & 0xFF) * Scale;
+		OutWeights.v[0] =  (PackedWeights[idx]        & 0xFF) * Scale;
+		OutWeights.v[1] = ((PackedWeights[idx] >> 8 ) & 0xFF) * Scale;
+		OutWeights.v[2] = ((PackedWeights[idx] >> 16) & 0xFF) * Scale;
+		OutWeights.v[3] = ((PackedWeights[idx] >> 24) & 0xFF) * Scale;
 #endif
 	}
 };

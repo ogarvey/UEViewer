@@ -370,10 +370,23 @@ struct FSkinWeightInfo
 	{
 		if (GNumSkelInfluences <= ARRAY_COUNT(W.BoneIndex))
 		{
-			for (int i = 0; i < GNumSkelInfluences; i++)
+			int i;
+			for (i = 0; i < GNumSkelInfluences; i++)
+			{
 				Ar << W.BoneIndex[i];
-			for (int i = 0; i < GNumSkelInfluences; i++)
+			}
+			for (/* continue i */; i < ARRAY_COUNT(W.BoneIndex); i++)
+			{
+				W.BoneIndex[i] = -1;
+			}
+			for (i = 0; i < GNumSkelInfluences; i++)
+			{
 				Ar << W.BoneWeight[i];
+			}
+			for (/* continue i */; i < ARRAY_COUNT(W.BoneIndex); i++)
+			{
+				W.BoneWeight[i] = 0;
+			}
 		}
 		else
 		{
@@ -726,7 +739,7 @@ struct FSkelMeshSection4
 					if (RigidVertices.Num()) appNotify("TODO: %s: dropping rigid vertices", __FUNCTION__);
 					// these vertices should be converted to FSoftVertex4, but we're dropping this data anyway
 				}
-				GNumSkelInfluences = (Ar.ArVer >= VER_UE4_SUPPORT_8_BONE_INFLUENCES_SKELETAL_MESHES) ? MAX_TOTAL_INFLUENCES_UE4 : NUM_INFLUENCES_UE4;
+				GNumSkelInfluences = (Ar.ArVer >= VER_UE4_SUPPORT_8_BONE_INFLUENCES_SKELETAL_MESHES) ? MAX_TOTAL_INFLUENCES_UE4 : NUM_INFLUENCES_UE4_OLD;
 				Ar << S.SoftVertices;
 			}
 			Ar << S.BoneMap;
@@ -940,7 +953,7 @@ struct FSkelMeshChunk4
 
 		if (!StripFlags.IsEditorDataStripped())
 		{
-			GNumSkelInfluences = (Ar.ArVer >= VER_UE4_SUPPORT_8_BONE_INFLUENCES_SKELETAL_MESHES) ? MAX_TOTAL_INFLUENCES_UE4 : NUM_INFLUENCES_UE4;
+			GNumSkelInfluences = (Ar.ArVer >= VER_UE4_SUPPORT_8_BONE_INFLUENCES_SKELETAL_MESHES) ? MAX_TOTAL_INFLUENCES_UE4 : NUM_INFLUENCES_UE4_OLD;
 			Ar << C.RigidVertices << C.SoftVertices;
 			if (C.RigidVertices.Num()) appNotify("TODO: %s: dropping rigid vertices", __FUNCTION__);
 		}
@@ -1003,7 +1016,7 @@ struct FSkeletalMeshVertexBuffer4
 
 		// Serialize vertex data. Use global variables to avoid passing variables to serializers.
 		GNumSkelUVSets = B.NumTexCoords;
-		GNumSkelInfluences = B.bExtraBoneInfluences ? MAX_TOTAL_INFLUENCES_UE4 : NUM_INFLUENCES_UE4;
+		GNumSkelInfluences = B.bExtraBoneInfluences ? MAX_TOTAL_INFLUENCES_UE4 : NUM_INFLUENCES_UE4_OLD;
 		if (!B.bUseFullPrecisionUVs)
 			B.VertsHalf.BulkSerialize(Ar);
 		else
@@ -1125,7 +1138,7 @@ struct FSkinWeightVertexBuffer
 		{
 			int32 MaxBoneInfluences, NumBones;
 			Ar << bVariableBonesPerVertex << MaxBoneInfluences << NumBones << NumVertices;
-			bExtraBoneInfluences = (MaxBoneInfluences > NUM_INFLUENCES_UE4);
+			bExtraBoneInfluences = (MaxBoneInfluences > NUM_INFLUENCES_UE4_OLD);
 			assert(MaxBoneInfluences <= MAX_TOTAL_INFLUENCES_UE4);
 			if (FAnimObjectVersion::Get(Ar) >= FAnimObjectVersion::IncreaseBoneIndexLimitPerChunk)
 				Ar << bUse16BitBoneIndex;
@@ -1137,7 +1150,7 @@ struct FSkinWeightVertexBuffer
 
 		if (!SkinWeightStripFlags.IsDataStrippedForServer())
 		{
-			GNumSkelInfluences = bExtraBoneInfluences ? MAX_TOTAL_INFLUENCES_UE4 : NUM_INFLUENCES_UE4;
+			GNumSkelInfluences = bExtraBoneInfluences ? MAX_TOTAL_INFLUENCES_UE4 : NUM_INFLUENCES_UE4_OLD;
 			if (!bNewWeightFormat)
 			{
 				B.Weights.BulkSerialize(Ar);
@@ -2070,18 +2083,25 @@ void USkeletalMesh4::ConvertMesh()
 			}
 			// convert influences
 			int i2 = 0;
-			unsigned PackedWeights = 0;
+			unsigned PackedWeights[NUM_INFLUENCES / 4];
+			for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+			{
+				PackedWeights[block] = 0;
+			}
 			for (int i = 0; i < NUM_INFLUENCES_UE4; i++)
 			{
 				int BoneIndex  = V->Infs.BoneIndex[i];
 				byte BoneWeight = V->Infs.BoneWeight[i];
 				if (BoneWeight == 0) continue;				// skip this influence (but do not stop the loop!)
-				PackedWeights |= BoneWeight << (i2 * 8);
+				PackedWeights[i2 / 4] |= BoneWeight << ((i2 % 4) * 8);
 				D->Bone[i2]   = (*BoneMap)[BoneIndex];
 				i2++;
 			}
-			D->PackedWeights = PackedWeights;
-			if (i2 < NUM_INFLUENCES_UE4) D->Bone[i2] = INDEX_NONE; // mark end of list
+			for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+			{
+				D->PackedWeights[block] = PackedWeights[block];
+			}
+			if (i2 < NUM_INFLUENCES) D->Bone[i2] = INDEX_NONE; // mark end of list
 		}
 
 		unguard;	// ProcessVerts

@@ -191,8 +191,10 @@ void CSkeletalMesh::FinalizeMesh()
 		for (int vert = 0; vert < L.NumVerts; vert++, V++)
 		{
 			byte UnpackedWeights[NUM_INFLUENCES];
-			// int32 -> byte4
-			*(uint32*)UnpackedWeights = V->PackedWeights;
+			for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+			{
+				*(((uint32*)UnpackedWeights) + block) = V->PackedWeights[block];
+			}
 
 			bool ShouldFix = false;
 			for (int i = 0; i < NUM_INFLUENCES; i++)
@@ -238,7 +240,10 @@ void CSkeletalMesh::FinalizeMesh()
 					}
 				}
 				// pack weights back to vertex
-				V->PackedWeights = *(uint32*)UnpackedWeights;
+				for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+				{
+					V->PackedWeights[block] = *(((uint32*)UnpackedWeights) + block);
+				}
 				NumFixedVerts++;
 			}
 
@@ -268,7 +273,10 @@ void CSkeletalMesh::FinalizeMesh()
 				int Delta = 255 - TotalWeight;
 				UnpackedWeights[0] += Delta;
 
-				V->PackedWeights = *(uint32*)UnpackedWeights;
+				for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+				{
+					V->PackedWeights[block] = *(((uint32*)UnpackedWeights) + block);
+				}
 			}
 		}
 	}

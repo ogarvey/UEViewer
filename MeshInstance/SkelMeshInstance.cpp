@@ -1198,7 +1198,7 @@ void CSkelMeshInstance::SkinMeshVerts()
 {
 	guard(CSkelMeshInstance::SkinMeshVerts);
 
-	const CSkelMeshLod& Mesh = pMesh->Lods[LodNum];
+	const CSkelMeshLod& Mesh = pMesh->Lods[LodIndex];
 	int NumVerts = Mesh.NumVerts;
 
 	memset(Skinned, 0, sizeof(CSkinVert) * NumVerts);
@@ -1208,15 +1208,18 @@ void CSkelMeshInstance::SkinMeshVerts()
 		const CSkelMeshVertex &V = Mesh.Verts[i];
 		CSkinVert             &D = Skinned[i];
 
-		CVec4 UnpackedWeights;
-		V.UnpackWeights(UnpackedWeights);
+		CVec4 UnpackedWeights[NUM_INFLUENCES / 4];
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			V.UnpackWeights(UnpackedWeights[block], block);
+		}
 
 		// compute weighted transform from all influenced bones
 
 		// take a 1st influence
 		CCoords transform;
 		transform = BoneData[V.Bone[0]].Transform;
-		transform.Scale(UnpackedWeights.v[0]);
+		transform.Scale(UnpackedWeights[0].v[0]);
 		// add remaining influences
 		for (int j = 1; j < NUM_INFLUENCES; j++)
 		{
@@ -1225,7 +1228,7 @@ void CSkelMeshInstance::SkinMeshVerts()
 			assert(iBone < pMesh->RefSkeleton.Num());	// validate bone index
 
 			const CMeshBoneData &data = BoneData[iBone];
-			CoordsMA(transform, UnpackedWeights.v[j], data.Transform);
+			CoordsMA(transform, UnpackedWeights[j / 4].v[j % 4], data.Transform);
 		}
 
 		// perform transformation
@@ -1265,8 +1268,11 @@ void CSkelMeshInstance::SkinMeshVerts()
 		const CSkelMeshVertex &V = MeshVerts[i];
 		CSkinVert             &D = Skinned[i];
 
-		CVec4 UnpackedWeights;
-		V.UnpackWeights(UnpackedWeights);
+		CVec4 UnpackedWeights[NUM_INFLUENCES / 4];
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			V.UnpackWeights(UnpackedWeights[block], block);
+		}
 
 		// compute weighted transform from all influenced bones
 
@@ -1277,7 +1283,7 @@ void CSkelMeshInstance::SkinMeshVerts()
 		x2 = transform.mm[1];
 		x3 = transform.mm[2];
 		x4 = transform.mm[3];
-		x5 = _mm_load1_ps(&UnpackedWeights.v[0]);// Weight
+		x5 = _mm_load1_ps(&UnpackedWeights[0].v[0]);// Weight
 		x1 = _mm_mul_ps(x1, x5);				// Transform * Weight
 		x2 = _mm_mul_ps(x2, x5);
 		x3 = _mm_mul_ps(x3, x5);
@@ -1291,7 +1297,7 @@ void CSkelMeshInstance::SkinMeshVerts()
 			assert(iBone < pMesh->RefSkeleton.Num());	// validate bone index
 
 			const CMeshBoneData &data = BoneData[iBone];
-			x5 = _mm_load1_ps(&UnpackedWeights.v[j]);	// Weight
+			x5 = _mm_load1_ps(&UnpackedWeights[j / 4].v[j % 4]);	// Weight
 			// x1..x4 += data.Transform * Weight
 			x6 = _mm_mul_ps(data.Transform4.mm[0], x5);
 			x1 = _mm_add_ps(x1, x6);
@@ -1658,12 +1664,15 @@ void CSkelMeshInstance::BuildInfColors()
 		for (i = 0; i < Lod.NumVerts; i++)
 		{
 			const CSkelMeshVertex &V = Lod.Verts[i];
-			CVec4 UnpackedWeights;
-			V.UnpackWeights(UnpackedWeights);
+			CVec4 UnpackedWeights[NUM_INFLUENCES / 4];
+			for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+			{
+				V.UnpackWeights(UnpackedWeights[block], block);
+			}
 			for (int j = 0; j < NUM_INFLUENCES; j++)
 			{
 				if (V.Bone[j] < 0) break;
-				VectorMA(InfColors[i], UnpackedWeights.v[j], BoneColors[V.Bone[j]]);
+				VectorMA(InfColors[i], UnpackedWeights[j / 4].v[j % 4], BoneColors[V.Bone[j]]);
 			}
 		}
 	}
@@ -1677,12 +1686,15 @@ void CSkelMeshInstance::BuildInfColors()
 		for (i = 0; i < Lod.NumVerts; i++)
 		{
 			const CSkelMeshVertex &V = Lod.Verts[i];
-			CVec4 UnpackedWeights;
-			V.UnpackWeights(UnpackedWeights);
+			CVec4 UnpackedWeights[NUM_INFLUENCES / 4];
+			for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+			{
+				V.UnpackWeights(UnpackedWeights[block], block);
+			}
 			for (int j = 0; j < NUM_INFLUENCES; j++)
 			{
 				if (V.Bone[j] < 0) break;
-				VectorMA(InfColors[i], UnpackedWeights.v[j], BoneColors[V.Bone[j] == HighlightBoneIndex]);
+				VectorMA(InfColors[i], UnpackedWeights[j / 4].v[j % 4], BoneColors[V.Bone[j] == HighlightBoneIndex]);
 			}
 		}
 	}

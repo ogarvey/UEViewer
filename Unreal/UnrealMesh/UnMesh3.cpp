@@ -185,8 +185,12 @@ void UMorphTargetSet::PostLoad()
 #define NUM_UV_SETS_UE3				4
 
 
-#if NUM_INFLUENCES_UE3 != NUM_INFLUENCES
-#error NUM_INFLUENCES_UE3 and NUM_INFLUENCES are not matching!
+#if NUM_INFLUENCES_UE3 > NUM_INFLUENCES
+#error NUM_INFLUENCES_UE3 too large!
+#endif
+
+#if NUM_INFLUENCES_UE3 != 4
+#error designed for 4 influences
 #endif
 
 #if NUM_UV_SETS_UE3 > MAX_MESH_UV_SETS
@@ -2283,8 +2287,12 @@ void USkeletalMesh3::ConvertMesh()
 					D->Bone[i2]   = C->Bones[BoneIndex];
 					i2++;
 				}
-				D->PackedWeights = PackedWeights;
-				if (i2 < NUM_INFLUENCES_UE3) D->Bone[i2] = INDEX_NONE; // mark end of list
+				D->PackedWeights[0] = PackedWeights;
+				for (int block = 1; block < NUM_INFLUENCES / 4; block++)
+				{
+					D->PackedWeights[block] = 0;
+				}
+				if (i2 < NUM_INFLUENCES) D->Bone[i2] = INDEX_NONE; // mark end of list
 			}
 			else
 			{
@@ -2299,8 +2307,13 @@ void USkeletalMesh3::ConvertMesh()
 					D->Position = CVT(V0.Pos);
 					UnpackNormals(V0.Normal, *D);
 					// single influence
-					D->PackedWeights = 0xFF;
+					D->PackedWeights[0] = 0xFF;
+					for (int block = 1; block < NUM_INFLUENCES / 4; block++)
+					{
+						D->PackedWeights[block] = 0;
+					}
 					D->Bone[0]   = C->Bones[V0.BoneIndex];
+					D->Bone[1] = INDEX_NONE; // mark end of list
 					SUV = V0.UV;
 				}
 				else
@@ -2324,9 +2337,13 @@ void USkeletalMesh3::ConvertMesh()
 						i2++;
 //						TotalWeight += BoneWeight;
 					}
-					D->PackedWeights = PackedWeights;
+					D->PackedWeights[0] = PackedWeights;
+					for (int block = 1; block < NUM_INFLUENCES / 4; block++)
+					{
+						D->PackedWeights[block] = 0;
+					}
 //					assert(TotalWeight == 255);
-					if (i2 < NUM_INFLUENCES_UE3) D->Bone[i2] = INDEX_NONE; // mark end of list
+					if (i2 < NUM_INFLUENCES) D->Bone[i2] = INDEX_NONE; // mark end of list
 					SUV = V0.UV;
 				}
 				// UV

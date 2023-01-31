@@ -211,12 +211,23 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 		ColorBufIndex = Context.Data.AddZeroed();
 	}
 
-	int BonesBufIndex = -1;
-	int WeightsBufIndex = -1;
+	int BonesBufIndex[NUM_INFLUENCES / 4];
+	int WeightsBufIndex[NUM_INFLUENCES / 4];
 	if (Context.IsSkeletal())
 	{
-		BonesBufIndex = Context.Data.AddZeroed();
-		WeightsBufIndex = Context.Data.AddZeroed();
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			BonesBufIndex[block] = Context.Data.AddZeroed();
+			WeightsBufIndex[block] = Context.Data.AddZeroed();
+		}
+	}
+	else
+	{
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			BonesBufIndex[block] = -1;
+			WeightsBufIndex[block] = -1;
+		}
 	}
 
 	int UVBufIndex[MAX_MESH_UV_SETS];
@@ -231,8 +242,8 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 	BufferData& TangentBuf = Context.Data[TangentBufIndex];
 	BufferData* UVBuf[MAX_MESH_UV_SETS];
 	BufferData* ColorBuf = NULL;
-	BufferData* BonesBuf = NULL;
-	BufferData* WeightsBuf = NULL;
+	BufferData* BonesBuf[NUM_INFLUENCES / 4];
+	BufferData* WeightsBuf[NUM_INFLUENCES / 4];
 
 	PositionBuf.Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
 	NormalBuf.Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
@@ -251,10 +262,21 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 
 	if (Context.IsSkeletal())
 	{
-		BonesBuf = &Context.Data[BonesBufIndex];
-		WeightsBuf = &Context.Data[WeightsBufIndex];
-		BonesBuf->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_SHORT, sizeof(uint16)*4);
-		WeightsBuf->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_BYTE, sizeof(uint32), /*InNormalized=*/ true);
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			BonesBuf[block] = &Context.Data[BonesBufIndex[block]];
+			WeightsBuf[block] = &Context.Data[WeightsBufIndex[block]];
+			BonesBuf[block]->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_SHORT, sizeof(uint16)*4);
+			WeightsBuf[block]->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_BYTE, sizeof(uint32), /*InNormalized=*/ true);
+		}
+	}
+	else
+	{
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			BonesBuf[block] = NULL;
+			WeightsBuf[block] = NULL;
+		}
 	}
 
 	// Prepare and build indices
@@ -359,21 +381,23 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 			const CMeshVertex& V0 = VERT(vertIndex);
 			const CSkelMeshVertex& V = static_cast<const CSkelMeshVertex&>(V0);
 
-			int16 Bones[NUM_INFLUENCES];
-			static_assert(NUM_INFLUENCES == 4, "Code designed for 4 influences");
+			int16 Bones[NUM_INFLUENCES / 4][4];
 			static_assert(sizeof(Bones) == sizeof(V.Bone), "Unexpected V.Bones size");
 			memcpy(Bones, V.Bone, sizeof(Bones));
 			for (int j = 0; j < NUM_INFLUENCES; j++)
 			{
 				// We have INDEX_NONE as list terminator, should replace with something else for glTF
-				if (Bones[j] == INDEX_NONE)
+				if (Bones[j / 4][j % 4] == INDEX_NONE)
 				{
-					Bones[j] = 0;
+					Bones[j / 4][j % 4] = 0;
 				}
 			}
 
-			BonesBuf->Put(*(uint64*)&Bones);
-			WeightsBuf->Put(V.PackedWeights);
+			for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+			{
+				BonesBuf[block]->Put(*(uint64*)&Bones[block]);
+				WeightsBuf[block]->Put(V.PackedWeights[block]);
+			}
 		}
 	}
 
@@ -407,11 +431,15 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 	}
 	if (Context.IsSkeletal())
 	{
-		Ar.Printf(
-			"            \"JOINTS_0\" : %d,\n"
-			"            \"WEIGHTS_0\" : %d,\n",
-			BonesBufIndex, WeightsBufIndex
-		);
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			Ar.Printf(
+				"            \"JOINTS_%d\" : %d,\n"
+				"            \"WEIGHTS_%d\" : %d,\n",
+				block, BonesBufIndex[block],
+				block, WeightsBufIndex[block]
+			);
+		}
 	}
 	for (int i = 0; i < Lod.NumTexCoords; i++)
 	{

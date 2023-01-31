@@ -348,7 +348,11 @@ static void ExportSkeletalMeshLod(const CSkeletalMesh &Mesh, const CSkelMeshLod 
 		// these vertices were duplicated by copying). Doing more complicated comparison
 		// will reduce performance with possibly reducing size of exported mesh by a few
 		// more vertices.
-		uint32 WeightsHash = S.PackedWeights;
+		uint32 WeightsHash = 0;
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			WeightsHash ^= S.PackedWeights[block];
+		}
 		for (j = 0; j < ARRAY_COUNT(S.Bone); j++)
 			WeightsHash ^= S.Bone[j] << j;
 		Share.AddVertex(S.Position, S.Normal, WeightsHash);
@@ -419,15 +423,18 @@ static void ExportSkeletalMeshLod(const CSkeletalMesh &Mesh, const CSkelMeshLod 
 	{
 		int WedgeIndex = Share.VertToWedge[i];
 		const CSkelMeshVertex &V = Lod.Verts[WedgeIndex];
-		CVec4 UnpackedWeights;
-		V.UnpackWeights(UnpackedWeights);
+		CVec4 UnpackedWeights[NUM_INFLUENCES / 4];
+		for (int block = 0; block < NUM_INFLUENCES / 4; block++)
+		{
+			V.UnpackWeights(UnpackedWeights[block], block);
+		}
 		for (j = 0; j < NUM_INFLUENCES; j++)
 		{
 			if (V.Bone[j] < 0) break;
 			NumInfluences--;				// just for verification
 
 			VRawBoneInfluence I;
-			I.Weight     = UnpackedWeights.v[j];
+			I.Weight     = UnpackedWeights[j / 4].v[j % 4];
 			I.BoneIndex  = V.Bone[j];
 			I.PointIndex = i;
 			if (sizeof(VRawBoneInfluence) == sizeof(int) * 3)
