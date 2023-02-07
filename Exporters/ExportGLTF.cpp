@@ -175,7 +175,7 @@ struct GLTFExportContext
 
 #define VERT(n)		*OffsetPointer(Verts, (n) * VertexSize)
 
-static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, const CMeshVertex* Verts, int SectonIndex, FArchive& Ar)
+static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, int lodIdx, const CMeshVertex* Verts, int SectonIndex, FArchive& Ar)
 {
 	guard(ExportSection);
 
@@ -183,6 +183,8 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 
 	const CMeshSection& S = Lod.Sections[SectonIndex];
 	bool bLast = (SectonIndex == Lod.Sections.Num()-1);
+
+	int numMorphs = Context.IsSkeletal() ? Context.SkelMesh->Morphs.Num() : 0;
 
 	// Remap section indices to local indices
 	CIndexBuffer::IndexAccessor_t GetIndex = Lod.Indices.GetAccessor();
@@ -204,6 +206,16 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 	int PositionBufIndex = Context.Data.AddZeroed();
 	int NormalBufIndex = Context.Data.AddZeroed();
 	int TangentBufIndex = Context.Data.AddZeroed();
+	TArray<int> MorphPositionBufIndex;
+	TArray<int> MorphNormalBufIndex;
+	if (numMorphs > 0)
+	{
+		for (int i = 0; i < numMorphs; i++)
+		{
+			MorphPositionBufIndex.Add(Context.Data.AddZeroed());
+			MorphNormalBufIndex.Add(Context.Data.AddZeroed());
+		}
+	}
 
 	int ColorBufIndex = -1;
 	if (Lod.VertexColors)
@@ -244,6 +256,8 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 	BufferData* ColorBuf = NULL;
 	BufferData* BonesBuf[NUM_INFLUENCES / 4];
 	BufferData* WeightsBuf[NUM_INFLUENCES / 4];
+	TArray<BufferData*> MorphPositionBuf;
+	TArray<BufferData*> MorphNormalBuf;
 
 	PositionBuf.Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
 	NormalBuf.Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
@@ -277,6 +291,11 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 			BonesBuf[block] = NULL;
 			WeightsBuf[block] = NULL;
 		}
+	}
+	for (int morph = 0; morph < numMorphs; morph++)
+	{
+		MorphPositionBuf.Add(&Context.Data[MorphPositionBufIndex[morph]]);
+		MorphNormalBuf.Add(&Context.Data[MorphNormalBufIndex[morph]]);
 	}
 
 	// Prepare and build indices
@@ -413,6 +432,49 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 		}
 	}
 
+	for (int morph = 0; morph < numMorphs; morph++)
+	{
+		// future optimization: output buffers should be sparse (GLTF Sec. 3.6.2.3)
+
+		const CMorphLod& morphLod = Context.SkelMesh->Morphs[morph]->Lods[lodIdx];
+		CVec3 zeroVec;
+		zeroVec.Set(0.0f, 0.0f, 0.0f);
+		TArray<CVec3> morphPositions;
+		morphPositions.Init(zeroVec, numLocalVerts);
+		TArray<CVec3> morphNormals;
+		morphNormals.Init(zeroVec, numLocalVerts);
+
+		for (const CMorphVertex& vert : morphLod.Vertices)
+		{
+			int localIndex = indexRemap[vert.VertexIndex];
+			if (localIndex == -1)
+			{
+				continue;
+			}
+			morphPositions[localIndex] = vert.PositionDelta;
+			morphNormals[localIndex] = vert.NormalDelta;
+		}
+
+		MorphPositionBuf[morph]->Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
+		MorphNormalBuf[morph]->Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
+
+		for (int i = 0; i < numLocalVerts; i++)
+		{
+			CVec3 PositionDelta = morphPositions[i];
+			TransformPosition(PositionDelta);
+			MorphPositionBuf[morph]->Put(PositionDelta);
+			CVec3 NormalDelta = morphNormals[i];
+			TransformDirection(NormalDelta);
+			MorphNormalBuf[morph]->Put(NormalDelta);
+		}
+
+		ComputeBounds((CVec3*)MorphPositionBuf[morph]->Data, numLocalVerts, sizeof(CVec3), Mins, Maxs);
+		appSprintf(ARRAY_ARG(buf), "[ %1.9g, %1.9g, %1.9g ]", VECTOR_ARG(Mins));
+		MorphPositionBuf[morph]->BoundsMin = buf;
+		appSprintf(ARRAY_ARG(buf), "[ %1.9g, %1.9g, %1.9g ]", VECTOR_ARG(Maxs));
+		MorphPositionBuf[morph]->BoundsMax = buf;
+	}
+
 	// Write primitive information to json
 	Ar.Printf(
 		"        {\n"
@@ -448,9 +510,28 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 			i, UVBufIndex[i], i < (Lod.NumTexCoords-1) ? "," : ""
 		);
 	}
+	Ar.Printf(
+		"          },\n");
+	if (Context.IsSkeletal() && Context.SkelMesh->Morphs.Num() > 0)
+	{
+		Ar.Printf(
+			"          \"targets\" : [\n");
+		for (int morph = 0; morph < numMorphs; morph++)
+		{
+			Ar.Printf(
+				"            {\n"
+				"              \"POSITION\" : %d,\n"
+				"              \"NORMAL\" : %d\n"
+				"            }%s\n",
+				MorphPositionBufIndex[morph],
+				MorphNormalBufIndex[morph],
+				morph < numMorphs - 1 ? "," : "");
+		}
+		Ar.Printf(
+			"          ],\n");
+	}
 
 	Ar.Printf(
-		"          },\n"
 		"          \"indices\" : %d,\n"
 		"          \"material\" : %d\n"
 		"        }%s\n",
@@ -1174,7 +1255,7 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 	unguard;
 }
 
-static void ExportMeshLod(GLTFExportContext& Context, const CBaseMeshLod& Lod, const CMeshVertex* Verts, FArchive& Ar, FArchive& Ar2)
+static void ExportMeshLod(GLTFExportContext& Context, const CBaseMeshLod& Lod, int lodIdx, const CMeshVertex* Verts, FArchive& Ar, FArchive& Ar2)
 {
 	guard(ExportMeshLod);
 
@@ -1228,14 +1309,37 @@ static void ExportMeshLod(GLTFExportContext& Context, const CBaseMeshLod& Lod, c
 	);
 	for (int i = 0; i < Lod.Sections.Num(); i++)
 	{
-		ExportSection(Context, Lod, Verts, i, Ar);
+		ExportSection(Context, Lod, lodIdx, Verts, i, Ar);
 	}
 	Ar.Printf(
 		"      ],\n"
-		"      \"name\" : \"%s\"\n"
-		"    }\n"
-		"  ],\n",
+		"      \"name\" : \"%s\"", // no newline yet, may need comma before extras
 		Context.MeshName
+	);
+	int numMorphs = Context.IsSkeletal() ? Context.SkelMesh->Morphs.Num() : 0;
+	if (numMorphs > 0)
+	{
+		Ar.Printf(",\n"
+			"      \"extras\" : {\n"
+			"        \"targetNames\" : [\n");
+		for (int morph = 0; morph < numMorphs; morph++)
+		{
+			Ar.Printf(
+				"          \"%s\"%s\n",
+				*(Context.SkelMesh->Morphs[morph]->Name),
+				morph < numMorphs - 1 ? "," : "");
+		}
+		Ar.Printf(
+			"        ]\n"
+			"      }\n");
+	}
+	else
+	{
+		Ar.Printf("\n");
+	}
+	Ar.Printf(
+		"    }\n"
+		"  ],\n"
 	);
 
 	// Write animations
@@ -1374,7 +1478,7 @@ void ExportSkeletalMeshGLTF(const CSkeletalMesh* Mesh)
 
 			FArchive* Ar2 = CreateExportArchive(OriginalMesh, EFileArchiveOptions::Default, "%s.bin", meshName);
 			assert(Ar2);
-			ExportMeshLod(Context, Mesh->Lods[Lod], Mesh->Lods[Lod].Verts, *Ar, *Ar2);
+			ExportMeshLod(Context, Mesh->Lods[Lod], Lod, Mesh->Lods[Lod].Verts, *Ar, *Ar2);
 			delete Ar;
 			delete Ar2;
 		}
@@ -1426,7 +1530,7 @@ void ExportStaticMeshGLTF(const CStaticMesh* Mesh)
 
 			FArchive* Ar2 = CreateExportArchive(OriginalMesh, EFileArchiveOptions::Default, "%s.bin", meshName);
 			assert(Ar2);
-			ExportMeshLod(Context, Mesh->Lods[Lod], Mesh->Lods[Lod].Verts, *Ar, *Ar2);
+			ExportMeshLod(Context, Mesh->Lods[Lod], Lod, Mesh->Lods[Lod].Verts, *Ar, *Ar2);
 			delete Ar;
 			delete Ar2;
 		}
