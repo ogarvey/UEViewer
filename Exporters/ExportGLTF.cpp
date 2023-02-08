@@ -64,11 +64,22 @@ struct BufferData
 		FLOAT = 5126
 	};
 
+	enum BufferTargetType
+	{
+		// unspecified/other - don't emit "target"
+		OTHER_BUFFER = 0,
+		// contains vertex attributes (position, normals, ...)
+		ARRAY_BUFFER = 34962,
+		// contains indices
+		ELEMENT_ARRAY_BUFFER = 34963
+	};
+
 	byte* Data;
 	int DataSize;
 	int ComponentType;
 	int Count;
 	const char* Type;
+	BufferTargetType TargetType;
 	bool bNormalized;
 
 	// Data for filling buffer
@@ -91,10 +102,11 @@ struct BufferData
 		if (Data) appFree(Data);
 	}
 
-	void Setup(int InCount, const char* InType, int InComponentType, int InItemSize, bool InNormalized = false)
+	void Setup(int InCount, const char* InType, int InComponentType, int InItemSize, BufferTargetType InTargetType, bool InNormalized = false)
 	{
 		Count = InCount;
 		Type = InType;
+		TargetType = InTargetType;
 		bNormalized = InNormalized;
 		ComponentType = InComponentType;
 		DataSize = InCount * InItemSize;
@@ -125,7 +137,7 @@ struct BufferData
 	{
 		// Compare metadata
 		if (Count != Other.Count || strcmp(Type, Other.Type) != 0 || ComponentType != Other.ComponentType ||
-			bNormalized != Other.bNormalized || DataSize != Other.DataSize)
+			TargetType != Other.TargetType || bNormalized != Other.bNormalized || DataSize != Other.DataSize)
 		{
 			return false;
 		}
@@ -259,19 +271,19 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, i
 	TArray<BufferData*> MorphPositionBuf;
 	TArray<BufferData*> MorphNormalBuf;
 
-	PositionBuf.Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
-	NormalBuf.Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
-	TangentBuf.Setup(numLocalVerts, "VEC4", BufferData::FLOAT, sizeof(CVec4));
+	PositionBuf.Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3), BufferData::ARRAY_BUFFER);
+	NormalBuf.Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3), BufferData::ARRAY_BUFFER);
+	TangentBuf.Setup(numLocalVerts, "VEC4", BufferData::FLOAT, sizeof(CVec4), BufferData::ARRAY_BUFFER);
 	for (int i = 0; i < Lod.NumTexCoords; i++)
 	{
 		UVBuf[i] = &Context.Data[UVBufIndex[i]];
-		UVBuf[i]->Setup(numLocalVerts, "VEC2", BufferData::FLOAT, sizeof(CMeshUVFloat));
+		UVBuf[i]->Setup(numLocalVerts, "VEC2", BufferData::FLOAT, sizeof(CMeshUVFloat), BufferData::ARRAY_BUFFER);
 	}
 
 	if (Lod.VertexColors)
 	{
 		ColorBuf = &Context.Data[ColorBufIndex];
-		ColorBuf->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_BYTE, 4, /*InNormalized=*/ true);
+		ColorBuf->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_BYTE, 4, BufferData::ARRAY_BUFFER, /*InNormalized=*/ true);
 	}
 
 	if (Context.IsSkeletal())
@@ -280,8 +292,8 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, i
 		{
 			BonesBuf[block] = &Context.Data[BonesBufIndex[block]];
 			WeightsBuf[block] = &Context.Data[WeightsBufIndex[block]];
-			BonesBuf[block]->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_SHORT, sizeof(uint16)*4);
-			WeightsBuf[block]->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_BYTE, sizeof(uint32), /*InNormalized=*/ true);
+			BonesBuf[block]->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_SHORT, sizeof(uint16)*4, BufferData::ARRAY_BUFFER);
+			WeightsBuf[block]->Setup(numLocalVerts, "VEC4", BufferData::UNSIGNED_BYTE, sizeof(uint32), BufferData::ARRAY_BUFFER, /*InNormalized=*/ true);
 		}
 	}
 	else
@@ -309,7 +321,7 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, i
 
 	if (numLocalVerts <= 65536)
 	{
-		IndexBuf.Setup(numLocalIndices, "SCALAR", BufferData::UNSIGNED_SHORT, sizeof(uint16));
+		IndexBuf.Setup(numLocalIndices, "SCALAR", BufferData::UNSIGNED_SHORT, sizeof(uint16), BufferData::ELEMENT_ARRAY_BUFFER);
 		for (int idx = 0; idx < numLocalIndices; idx++)
 		{
 			IndexBuf.Put<uint16>(indexRemap[localIndices[idx]]);
@@ -317,7 +329,7 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, i
 	}
 	else
 	{
-		IndexBuf.Setup(numLocalIndices, "SCALAR", BufferData::UNSIGNED_INT, sizeof(uint32));
+		IndexBuf.Setup(numLocalIndices, "SCALAR", BufferData::UNSIGNED_INT, sizeof(uint32), BufferData::ELEMENT_ARRAY_BUFFER);
 		for (int idx = 0; idx < numLocalIndices; idx++)
 		{
 			IndexBuf.Put<uint32>(indexRemap[localIndices[idx]]);
@@ -455,8 +467,8 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, i
 			morphNormals[localIndex] = vert.NormalDelta;
 		}
 
-		MorphPositionBuf[morph]->Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
-		MorphNormalBuf[morph]->Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3));
+		MorphPositionBuf[morph]->Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3), BufferData::ARRAY_BUFFER);
+		MorphNormalBuf[morph]->Setup(numLocalVerts, "VEC3", BufferData::FLOAT, sizeof(CVec3), BufferData::ARRAY_BUFFER);
 
 		for (int i = 0; i < numLocalVerts; i++)
 		{
@@ -575,7 +587,7 @@ static void ExportSkinData(GLTFExportContext& Context, const CSkelMeshLod& Lod, 
 
 	int MatrixBufIndex = Context.Data.AddZeroed();
 	BufferData& MatrixBuf = Context.Data[MatrixBufIndex];
-	MatrixBuf.Setup(numBones, "MAT4", BufferData::FLOAT, sizeof(CMat4));
+	MatrixBuf.Setup(numBones, "MAT4", BufferData::FLOAT, sizeof(CMat4), BufferData::OTHER_BUFFER);
 
 	Ar.Printf(
 		"  \"nodes\" : [\n"
@@ -869,7 +881,7 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 
 			int TimeBufIndex = Context.Data.AddZeroed();
 			BufferData& TimeBuf = Context.Data[TimeBufIndex];
-			TimeBuf.Setup(NumKeys, "SCALAR", BufferData::FLOAT, sizeof(float));
+			TimeBuf.Setup(NumKeys, "SCALAR", BufferData::FLOAT, sizeof(float), BufferData::OTHER_BUFFER);
 
 			// Compute RateScale. Take care of null Rate - this might be valid if animation has just 1 frame (pose)
 			float RateScale = (Seq.Rate > 0.001f) ? 1.0f / Seq.Rate : 1.0f;
@@ -907,7 +919,7 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 			{
 			case AnimSampler::TRANSLATION:
 				// Translation track
-				DataBuf.Setup(NumKeys, "VEC3", BufferData::FLOAT, sizeof(CVec3));
+				DataBuf.Setup(NumKeys, "VEC3", BufferData::FLOAT, sizeof(CVec3), BufferData::OTHER_BUFFER);
 				for (int i = 0; i < NumKeys; i++)
 				{
 					CVec3 Pos = Sampler.Track->KeyPos[i];
@@ -917,7 +929,7 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 				break;
 			case AnimSampler::ROTATION:
 				// Rotation track
-				DataBuf.Setup(NumKeys, "VEC4", BufferData::FLOAT, sizeof(CQuat));
+				DataBuf.Setup(NumKeys, "VEC4", BufferData::FLOAT, sizeof(CQuat), BufferData::OTHER_BUFFER);
 				for (int i = 0; i < NumKeys; i++)
 				{
 					CQuat Rot = Sampler.Track->KeyQuat[i];
@@ -932,7 +944,7 @@ static void ExportAnimations(GLTFExportContext& Context, FArchive& Ar)
 #if SUPPORT_SCALE_KEYS
 			case AnimSampler::SCALE:
 				// Scale track
-				DataBuf.Setup(NumKeys, "VEC3", BufferData::FLOAT, sizeof(CVec3));
+				DataBuf.Setup(NumKeys, "VEC3", BufferData::FLOAT, sizeof(CVec3), BufferData::OTHER_BUFFER);
 				for (int i = 0; i < NumKeys; i++)
 				{
 					CVec3 Scale = Sampler.Track->KeyScale[i];
@@ -1377,10 +1389,23 @@ static void ExportMeshLod(GLTFExportContext& Context, const CBaseMeshLod& Lod, i
 			"    {\n"
 			"      \"buffer\" : 0,\n"
 			"      \"byteOffset\" : %d,\n"
-			"      \"byteLength\" : %d\n"
-			"    }%s\n",
+			"      \"byteLength\" : %d", // comma only if target follows, defer newline
 			bufferOffset,
-			B.DataSize,
+			B.DataSize
+		);
+		if (B.TargetType != BufferData::OTHER_BUFFER)
+		{
+			Ar.Printf(",\n"
+				"      \"target\" : %d\n",
+				(int)B.TargetType
+			);
+		}
+		else
+		{
+			Ar.Printf("\n");
+		}
+		Ar.Printf(
+			"    }%s\n",
 			i == (Context.Data.Num()-1) ? "" : ","
 		);
 		bufferOffset += B.DataSize;
