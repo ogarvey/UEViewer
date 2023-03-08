@@ -1135,10 +1135,17 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 				info.MaterialIndex, 0
 			);
 		}
-		else
+		else if (info.SpecularIndex >= 0 || info.SpecPowerIndex >= 0)
 		{
 			Ar.Printf(
 				"        \"metallicFactor\" : 0.0,\n"
+				"        \"roughnessFactor\" : 1.0"
+			);
+		}
+		else
+		{
+			Ar.Printf(
+				"        \"metallicFactor\" : 1.0,\n"
 				"        \"roughnessFactor\" : 1.0"
 			);
 		}
