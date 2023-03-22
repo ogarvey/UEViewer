@@ -170,7 +170,7 @@ byte* CTextureData::Decompress(int MipLevel, int Slice)
 			float *d = (float*)dst;
 			for (int i = 0; i < USize * VSize; i++)
 			{
-				float v = static_cast<float>(*s) / 65536.0;
+				float v = static_cast<float>(*s) / 65535.0;
 				*d++ = v;
 				*d++ = v;
 				*d++ = v;
