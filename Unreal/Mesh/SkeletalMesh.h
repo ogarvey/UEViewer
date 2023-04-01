@@ -4,7 +4,7 @@
 #include "MeshCommon.h"
 
 //todo: should go away
-#define BAKE_BONE_SCALES 1
+#define BAKE_BONE_SCALES 0
 
 /*-----------------------------------------------------------------------------
 	Local SkeletalMesh class, encapsulated all UE versions
