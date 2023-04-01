@@ -16,6 +16,7 @@ Docs/cmdline.cfg
 Docs/fortnite.txt
 Tools/MaxActorXImport/ActorXImporter.ini
 Tools/UT2down/
+build_with_path.bat
 
 # Files produced by umodel
 UmodelExport/
