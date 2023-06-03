@@ -363,29 +363,44 @@ static int GNumSkelInfluences = 4;
 // Bone influence mapping for skeletal mesh vertex
 struct FSkinWeightInfo
 {
-	byte				BoneIndex[NUM_INFLUENCES_UE4];
+	uint16				BoneIndex[NUM_INFLUENCES_UE4];
 	byte				BoneWeight[NUM_INFLUENCES_UE4];
 
 	friend FArchive& operator<<(FArchive& Ar, FSkinWeightInfo& W)
 	{
-		if (GNumSkelInfluences <= ARRAY_COUNT(W.BoneIndex))
+		W.ReadFrom(Ar, false);
+		return Ar;
+	}
+
+	void ReadFrom(FArchive& Ar, bool use16BitBoneIndex)
+	{
+		if (GNumSkelInfluences <= ARRAY_COUNT(BoneIndex))
 		{
 			int i;
 			for (i = 0; i < GNumSkelInfluences; i++)
 			{
-				Ar << W.BoneIndex[i];
+				if (use16BitBoneIndex)
+				{
+					Ar << BoneIndex[i];
+				}
+				else
+				{
+					byte index8Bit;
+					Ar << index8Bit;
+					BoneIndex[i] = index8Bit;
+				}
 			}
-			for (/* continue i */; i < ARRAY_COUNT(W.BoneIndex); i++)
+			for (/* continue i */; i < ARRAY_COUNT(BoneIndex); i++)
 			{
-				W.BoneIndex[i] = -1;
+				BoneIndex[i] = -1;
 			}
 			for (i = 0; i < GNumSkelInfluences; i++)
 			{
-				Ar << W.BoneWeight[i];
+				Ar << BoneWeight[i];
 			}
-			for (/* continue i */; i < ARRAY_COUNT(W.BoneIndex); i++)
+			for (/* continue i */; i < ARRAY_COUNT(BoneIndex); i++)
 			{
-				W.BoneWeight[i] = 0;
+				BoneWeight[i] = 0;
 			}
 		}
 		else
@@ -393,10 +408,21 @@ struct FSkinWeightInfo
 			// possibly this vertex has more vertex influences
 			assert(GNumSkelInfluences <= MAX_TOTAL_INFLUENCES_UE4);
 			// serialize influences
-			byte BoneIndex2[MAX_TOTAL_INFLUENCES_UE4];
+			uint16 BoneIndex2[MAX_TOTAL_INFLUENCES_UE4];
 			byte BoneWeight2[MAX_TOTAL_INFLUENCES_UE4];
 			for (int i = 0; i < GNumSkelInfluences; i++)
-				Ar << BoneIndex2[i];
+			{
+				if (use16BitBoneIndex)
+				{
+					Ar << BoneIndex2[i];
+				}
+				else
+				{
+					byte index8Bit;
+					Ar << index8Bit;
+					BoneIndex2[i] = index8Bit;
+				}
+			}
 			for (int i = 0; i < GNumSkelInfluences; i++)
 				Ar << BoneWeight2[i];
 #if 0
@@ -423,11 +449,10 @@ struct FSkinWeightInfo
 			// copy influences to vertex
 			for (int i = 0; i < NUM_INFLUENCES_UE4; i++)
 			{
-				W.BoneIndex[i] = BoneIndex2[i];
-				W.BoneWeight[i] = BoneWeight2[i];
+				BoneIndex[i] = BoneIndex2[i];
+				BoneWeight[i] = BoneWeight2[i];
 			}
 		}
-		return Ar;
 	}
 };
 
@@ -1184,7 +1209,6 @@ struct FSkinWeightVertexBuffer
 			}
 
 			assert(!bVariableBonesPerVertex);
-			assert(!bUse16BitBoneIndex);
 			// When bVariableBonesPerVertex is set, LookupVertexBuffer is used to fetch influence data. Otherwise, data format
 			// is just like before.
 
@@ -1197,7 +1221,7 @@ struct FSkinWeightVertexBuffer
 				for (int i = 0; i < NumVertices; i++)
 				{
 					FSkinWeightInfo Weight;
-					Reader << Weight;
+					Weight.ReadFrom(Reader, bUse16BitBoneIndex);
 					B.Weights[i] = Weight;
 				}
 			}
