@@ -13,6 +13,9 @@
 
 #include "Parallel.h"
 
+#include <tuple>
+#include <vector>
+
 #define TGA_SAVE_BOTTOMLEFT	1
 
 
@@ -585,4 +588,186 @@ void ExportCubemap(const UUnrealMaterial* Tex)
 
 
 	unguard;
+}
+
+const char* ExportTextureChannels(
+	const char* pathWithoutExt,
+	ExportTextureChannelMode modeR, const UUnrealMaterial* TexR,
+	ExportTextureChannelMode modeG, const UUnrealMaterial* TexG,
+	ExportTextureChannelMode modeB, const UUnrealMaterial* TexB,
+	ExportTextureChannelMode modeA, const UUnrealMaterial* TexA)
+{
+	bool success = false;
+	byte* bytesR = NULL;
+	byte* bytesG = NULL;
+	byte* bytesB = NULL;
+	byte* bytesA = NULL;
+	int sizeU = 0;
+	int sizeV = 0;
+	int isFloat = -1;
+	const std::vector<std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**>> channels =
+	{
+		{modeR, TexR, &bytesR},
+		{modeG, TexG, &bytesG},
+		{modeB, TexB, &bytesB},
+		{modeA, TexA, &bytesA}
+	};
+	for (const std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**>& channel : channels)
+	{
+		ExportTextureChannelMode mode = std::get<0>(channel);
+		const UUnrealMaterial* Tex = std::get<1>(channel);
+		byte** decompressedData = std::get<2>(channel);
+		if (mode <= ExportTextureChannelMode::AllOne)
+		{
+			continue;
+		}
+		if (Tex == NULL)
+		{
+			appPrintf("ERROR: failed to export texture %s due to missing source texture\n", pathWithoutExt);
+			goto cleanup;
+		}
+		CTextureData texdata;
+		Tex->GetTextureData(texdata);
+		if (texdata.Mips.Num() < 1)
+		{
+			appPrintf("ERROR: failed to export texture %s due to no Mips in source texture\n", pathWithoutExt);
+			goto cleanup;
+		}
+		*decompressedData = texdata.Decompress();
+		if (sizeU > 0)
+		{
+			if (sizeU != texdata.Mips[0].USize || sizeV != texdata.Mips[0].VSize || isFloat != PixelFormatInfo[texdata.Format].Float)
+			{
+				appPrintf("ERROR: failed to export texture %s due to different source texture sizes\n", pathWithoutExt);
+				goto cleanup;
+			}
+		}
+		else
+		{
+			sizeU = texdata.Mips[0].USize;
+			sizeV = texdata.Mips[0].VSize;
+			isFloat = PixelFormatInfo[texdata.Format].Float;
+		}
+	}
+	if (sizeU == 0)
+	{
+		appPrintf("ERROR: failed to export texture %s - output size unknown without any input textures\n", pathWithoutExt);
+		goto cleanup;
+	}
+	int bytesPerChannel = isFloat == 1 ? sizeof(float) : sizeof(byte);
+	byte* bytesCombined = (byte*)appMallocNoInit(sizeU * sizeV * 4 * bytesPerChannel);
+	byte* writePtr = bytesCombined;
+	for (int i = 0; i < sizeU * sizeV; ++i)
+	{
+		for (const std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**>& channel : channels)
+		{
+			ExportTextureChannelMode mode = std::get<0>(channel);
+			byte* sourceData = *std::get<2>(channel);
+			if (isFloat == 1)
+			{
+				float output;
+				switch (mode)
+				{
+				case ExportTextureChannelMode::AllZero:
+					output = 0.0f;
+					break;
+				case ExportTextureChannelMode::AllOne:
+					output = 1.0f;
+					break;
+				default:
+				{
+					int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseR);
+					if (mode >= ExportTextureChannelMode::UseOneMinusR)
+					{
+						int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseOneMinusR);
+						output = 1.0f - ((float*)sourceData)[4 * i + offset];
+					}
+					else
+					{
+						int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseR);
+						output = ((float*)sourceData)[4 * i + offset];
+					}
+					break;
+				}
+				}
+				*((float*)writePtr) = output;
+			}
+			else
+			{
+				byte output;
+				switch (mode)
+				{
+				case ExportTextureChannelMode::AllZero:
+					output = 0;
+					break;
+				case ExportTextureChannelMode::AllOne:
+					output = 255;
+					break;
+				default:
+				{
+					int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseR);
+					if (mode >= ExportTextureChannelMode::UseOneMinusR)
+					{
+						int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseOneMinusR);
+						output = 255 - sourceData[4 * i + offset];
+					}
+					else
+					{
+						int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseR);
+						output = sourceData[4 * i + offset];
+					}
+					break;
+				}
+				}
+				*writePtr = output;
+			}
+			writePtr += bytesPerChannel;
+		}
+	}
+
+	static char outputPath[1024];
+	if (isFloat == 1)
+	{
+		appSprintf(ARRAY_ARG(outputPath), "%s.hdr", pathWithoutExt);
+		FFileWriter Ar{outputPath};
+		WriteHDR(Ar, sizeU, sizeV, bytesCombined);
+	}
+	else if (GExportPNG)
+	{
+		TArray<byte> Data;
+		CompressPNG(bytesCombined, sizeU, sizeV, Data);
+		appSprintf(ARRAY_ARG(outputPath), "%s.png", pathWithoutExt);
+		FFileWriter Ar{outputPath};
+		Ar.Serialize(Data.GetData(), Data.Num());
+	}
+	else
+	{
+#if TGA_SAVE_BOTTOMLEFT
+		// flip image vertically (UnrealEd for UE2 have a bug with importing TGA_TOPLEFT images,
+		// it simply ignores orientation flags)
+		for (int i = 0; i < sizeU / 2; i++)
+		{
+			uint32 *p1 = (uint32*)(bytesCombined + sizeU * 4 * i);
+			uint32 *p2 = (uint32*)(bytesCombined + sizeU * 4 * (sizeV - i - 1));
+			for (int j = 0; j < sizeU; j++)
+			{
+				Exchange(*p1++, *p2++);
+			}
+		}
+#endif // TGA_SAVE_BOTTOMLEFT
+		appSprintf(ARRAY_ARG(outputPath), "%s.tga", pathWithoutExt);
+		FFileWriter Ar{outputPath};
+		WriteTGA(Ar, sizeU, sizeV, bytesCombined);
+	}
+
+	success = true;
+
+cleanup:
+	if (bytesR != NULL) { delete[] bytesR; }
+	if (bytesG != NULL) { delete[] bytesG; }
+	if (bytesB != NULL) { delete[] bytesB; }
+	if (bytesA != NULL) { delete[] bytesA; }
+	if (bytesCombined != NULL) { delete[] bytesCombined; }
+
+	return success ? outputPath : NULL;
 }

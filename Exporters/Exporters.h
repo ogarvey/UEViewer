@@ -28,6 +28,8 @@ bool ExportObject(const UObject* Obj);
 void appSetBaseExportDirectory(const char* Dir);
 const char* GetExportPath(const UObject* Obj);
 
+// concats path for Obj with fmt.
+// Return is static, i.e. does not have to be deleted but gets changed on next call
 const char* GetExportFileName(const UObject* Obj, const char* fmt, ...);
 bool CheckExportFilePresence(const UObject* Obj, const char* fmt, ...);
 
@@ -77,6 +79,20 @@ void Export3D(const UVertMesh* Mesh);
 // TGA, DDS, PNG
 void ExportTexture(const UUnrealMaterial* Tex);
 void ExportCubemap(const UUnrealMaterial* Tex);
+enum class ExportTextureChannelMode
+{
+	AllZero, AllOne,
+	UseR, UseG, UseB, UseA,
+	UseOneMinusR, UseOneMinusG, UseOneMinusB, UseOneMinusA
+	// Caution: order of values is used in ExportTextureChannels
+};
+// return: export path including extension or null on error; is static, i.e. does not have to be deleted but gets changed on next call
+const char* ExportTextureChannels(
+	const char* pathWithoutExt,
+	ExportTextureChannelMode modeR, const UUnrealMaterial* TexR,
+	ExportTextureChannelMode modeG, const UUnrealMaterial* TexG,
+	ExportTextureChannelMode modeB, const UUnrealMaterial* TexB,
+	ExportTextureChannelMode modeA, const UUnrealMaterial* TexA);
 // UUnrealMaterial
 void ExportMaterial(const UUnrealMaterial* Mat);
 // sound
