@@ -4,29 +4,69 @@
             "name": "Win32-Release",
             "customConfigurationVariables": {
                 "BuildOptions": "",
-				"ExeName": "umodel.exe"
-			}
+                "ExeName": "umodel.exe"
+            },
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/Core",
+                "${workspaceFolder}/Unreal",
+                "${workspaceFolder}/UmodelTool",
+                "${workspaceFolder}/libs/**",
+                "${workspaceFolder}/UI"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         },
         {
             "name": "Win32-Debug",
             "customConfigurationVariables": {
                 "BuildOptions": "--debug",
-				"ExeName": "umodel-debug.exe"
-			}
+                "ExeName": "umodel-debug.exe"
+            },
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/Core",
+                "${workspaceFolder}/Unreal",
+                "${workspaceFolder}/UmodelTool",
+                "${workspaceFolder}/libs/**",
+                "${workspaceFolder}/UI"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         },
         {
             "name": "Win64-Release",
             "customConfigurationVariables": {
                 "BuildOptions": "--64",
-				"ExeName": "umodel_64.exe"
-			}
+                "ExeName": "umodel_64.exe"
+            },
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/Core",
+                "${workspaceFolder}/Unreal",
+                "${workspaceFolder}/UmodelTool",
+                "${workspaceFolder}/libs/**",
+                "${workspaceFolder}/UI"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         },
         {
             "name": "Win64-Debug",
             "customConfigurationVariables": {
                 "BuildOptions": "--64 --debug",
-				"ExeName": "umodel-debug_64.exe"
-			}
+                "ExeName": "umodel-debug_64.exe"
+            },
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/Core",
+                "${workspaceFolder}/Unreal",
+                "${workspaceFolder}/UmodelTool",
+                "${workspaceFolder}/libs/**",
+                "${workspaceFolder}/UI"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         }
     ],
     "version": 4
