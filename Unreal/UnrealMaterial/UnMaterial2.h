@@ -740,6 +740,21 @@ public:
 #endif
 };
 
+class UColorModifier : public UModifier
+{
+	DECLARE_CLASS(UColorModifier, UModifier);
+public:
+	FColor	Color;
+	bool	RenderTwoSided;
+	bool 	AlphaBlend;
+
+	BEGIN_PROP_TABLE
+		PROP_COLOR(Color)
+		PROP_BOOL(RenderTwoSided)
+		PROP_BOOL(AlphaBlend)
+	END_PROP_TABLE
+};
+
 
 //?? NOTE: Bioshock EFrameBufferBlending is used for UShader and UFinalBlend, plus it has different values
 enum EFrameBufferBlending
@@ -1160,6 +1175,24 @@ public:
 	{}
 };
 
+class UVariableTexPanner : public UTexModifier
+{
+	DECLARE_CLASS(UVariableTexPanner, UTexModifier)
+public:
+	FRotator	PanDirection;
+	float		PanRate;
+	FMatrix		M;
+	float		LastTime;
+	float		PanOffset;
+
+	BEGIN_PROP_TABLE
+		PROP_ROTATOR(PanDirection)
+		PROP_FLOAT(PanRate)
+		PROP_DROP(M)
+		PROP_DROP(LastTime)
+		PROP_DROP(PanOffset)
+	END_PROP_TABLE
+};
 
 #if BIOSHOCK
 
@@ -1356,6 +1389,7 @@ public:
 
 
 #define REGISTER_MATERIAL_CLASSES		\
+	REGISTER_CLASS(UColorModifier)		\
 	REGISTER_CLASS(UConstantColor)		\
 	REGISTER_CLASS(UBitmapMaterial)		\
 	REGISTER_CLASS(UPalette)			\
@@ -1370,6 +1404,7 @@ public:
 	REGISTER_CLASS(UTexPanner)			\
 	REGISTER_CLASS(UTexRotator)			\
 	REGISTER_CLASS(UTexScaler)			\
+	REGISTER_CLASS(UVariableTexPanner)	\
 	REGISTER_CLASS(UVertexColor)
 
 #define REGISTER_MATERIAL_CLASSES_BIO	\

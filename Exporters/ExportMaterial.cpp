@@ -30,10 +30,14 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 	//todo: remove separate texture handling from Main.cpp exporter registraction
 
 	TArray<UUnrealMaterial*> AllTextures;
-	Mat->AppendReferencedTextures(AllTextures, false);
+	if (!GDontExportLinked)
+	{
+		Mat->AppendReferencedTextures(AllTextures, false);
+	}
 
 	CMaterialParams Params;
 	Mat->GetParams(Params);
+
 	if ((Params.IsNull() || Params.Diffuse == Mat) && AllTextures.Num() == 0)
 	{
 		// empty/unknown material, or material itself is a texture
@@ -53,14 +57,18 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 		ToExport.AddUnique(Params.Arg); \
 	}
 
-	PROC(Diffuse);
-	PROC(Normal);
-	PROC(Specular);
-	PROC(SpecPower);
-	PROC(Opacity);
-	PROC(Emissive);
-	PROC(Cube);
-	PROC(Mask);
+	if (!GDontExportLinked)
+	{
+		PROC(Diffuse);
+		PROC(Normal);
+		PROC(Specular);
+		PROC(SpecPower);
+		PROC(Opacity);
+		PROC(Emissive);
+		PROC(Cube);
+		PROC(Mask);
+	}
+
 
 	// Dump material properties to a separate file
 	FArchive* PropAr = CreateExportArchive(Mat, EFileArchiveOptions::TextFile, "%s.props.txt", Mat->Name);

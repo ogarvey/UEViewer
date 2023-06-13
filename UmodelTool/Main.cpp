@@ -446,6 +446,7 @@ static void PrintUsage()
 			"    -notgacomp      disable TGA compression\n"
 			"    -nooverwrite    prevent existing files from being overwritten (better\n"
 			"                    performance)\n"
+			"    -nolinked       linked objects will not be exported\n"
 			"\n"
 			"Supported resources for export:\n"
 			"    SkeletalMesh    exported as ActorX psk file, MD5Mesh or glTF\n"
@@ -827,6 +828,7 @@ int main(int argc, const char **argv)
 #endif
 			OPT_BOOL ("uncook",  GSettings.Export.SaveUncooked)
 			OPT_BOOL ("groups",  GSettings.Export.SaveGroups)
+			OPT_BOOL ("nolinked", GSettings.Export.DontExportLinked)
 			OPT_BOOL ("lods",    GExportLods)
 			OPT_BOOL ("uc",      GExportScripts)
 			// disable classes

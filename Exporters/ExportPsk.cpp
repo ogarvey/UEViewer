@@ -238,13 +238,12 @@ static void ExportCommonMeshData
 		//!! (the same valid for md5mesh export)
 		if (Tex)
 		{
-			// TODO: this needs to export the FULL fuckin name
-			char MaterialName[256];
-			char ObjName[256];
-			Tex->GetFullName(ARRAY_ARG(ObjName));
-			appSprintf(MaterialName, sizeof(MaterialName), "%s'%s.%s'", Tex->GetClassName(), Tex->GetPackageName(), ObjName);
-			appStrncpyz(M.MaterialName, MaterialName, ARRAY_COUNT(M.MaterialName));
-			ExportObject(Tex);
+			appStrncpyz(M.MaterialName, Tex->Name, ARRAY_COUNT(M.MaterialName));
+
+			if (!GDontExportLinked)
+			{
+				ExportObject(Tex);
+			}
 		}
 		else
 			appSprintf(ARRAY_ARG(M.MaterialName), "None", i);

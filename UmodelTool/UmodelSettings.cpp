@@ -131,6 +131,7 @@ void CExportSettings::Reset()
 	SaveUncooked = false;
 	SaveGroups = false;
 	DontOverwriteFiles = false;
+	DontExportLinked = true;
 }
 
 void CExportSettings::Apply()
@@ -149,6 +150,7 @@ void CExportSettings::Apply()
 	GUncook = SaveUncooked;
 	GUseGroups = SaveGroups;
 	GDontOverwriteFiles = DontOverwriteFiles;
+	GDontExportLinked = DontExportLinked;
 }
 
 void CSavePackagesSettings::SetPath(const char* path)
