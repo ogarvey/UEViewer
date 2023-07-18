@@ -12,6 +12,9 @@
 #include "Exporters.h"
 #include "../UmodelTool/Version.h"
 
+#include <map>
+#include <string>
+
 #define FIRST_BONE_NODE		1
 
 //?? TODO: remove this function
@@ -370,7 +373,8 @@ static void ExportSection(GLTFExportContext& Context, const CBaseMeshLod& Lod, i
 			appError("%X -> %g\n", V.Normal.Data, Normal.w);
 		}
 	#endif
-		Tangent.W = (Normal.W < 0) ? -1 : 1;
+		// force right-handed coordinate system because some programs (including Blender) assume this. Normal maps get adjusted in Export.
+		Tangent.W = 1.0f;
 
 		TransformPosition(Position);
 		TransformDirection(Normal);
@@ -1004,7 +1008,7 @@ struct MaterialIndices
 #define EXPORT_GLTF_MATERIAL_SPECULAR	1
 
 
-static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBaseMeshLod& Lod)
+static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBaseMeshLod& Lod, bool flipNormals)
 {
 	guard(ExportMaterials);
 #if !EXPORT_GLTF_MATERIALS
@@ -1033,18 +1037,15 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 #else
 	const UObject* OriginalMesh = Context.IsSkeletal() ? Context.SkelMesh->OriginalMesh : Context.StatMesh->OriginalMesh;
 	// Collect texture info
-	// TODO: Assumes all textures are in local directory; Viewers don't seem to support paths with ".."; export again to local?
-	#define PROC(Arg) \
-		if (Params.Arg) \
-		{ \
-			const char *filename = GetExportFileName(OriginalMesh, "%s.png", Params.Arg->Name); \
-			int index = Images.AddUnique(filename); \
-			info.Arg ## Index = index; \
-		}
 	TArray<MaterialIndices> Materials;
 	TArray<FString> Images;
+	std::map<std::string, std::string> ImagesWithoutExtMap;
 
 	guard(ExportMaterials::CreateFiles);
+
+	// create directory for textures
+	appMakeDirectory(GetExportFileName(OriginalMesh, "gltf_tex"));
+
 	for (int i = 0; i < Lod.Sections.Num(); i++) {
 		Materials.AddDefaulted();
 		MaterialIndices& info = Materials[Materials.Num()-1];
@@ -1054,23 +1055,168 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 		Lod.Sections[i].Material->GetParams(Params);
 
 #if EXPORT_GLTF_MATERIAL_DIFFUSE
-		PROC(Diffuse);
+		if (Params.Diffuse)
+		{
+			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s", Params.Diffuse->Name);
+			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
+			{
+				const char *filename = ExportTextureChannels(
+					filenameWithoutExt.c_str(),
+					ExportTextureChannelMode::UseR, Params.Diffuse,
+					ExportTextureChannelMode::UseG, Params.Diffuse,
+					ExportTextureChannelMode::UseB, Params.Diffuse,
+					ExportTextureChannelMode::UseA, Params.Diffuse
+				);
+				if (filename)
+				{
+					ImagesWithoutExtMap[filenameWithoutExt] = filename;
+				}
+			}
+			auto filenameIter = ImagesWithoutExtMap.find(filenameWithoutExt);
+			if (filenameIter != ImagesWithoutExtMap.cend()) // false only if ExportTextureChannels() failed
+			{
+				int index = Images.AddUnique(filenameIter->second.c_str());
+				info.DiffuseIndex = index;
+			}
+		}
 #endif
 #if EXPORT_GLTF_MATERIAL_NORMAL
-		PROC(Normal);
+		if (Params.Normal)
+		{
+			// custom suffix for possibly converted handedness
+			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s_rh", Params.Normal->Name);
+			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
+			{
+				ExportTextureChannelMode modeG = flipNormals ? ExportTextureChannelMode::UseOneMinusG : ExportTextureChannelMode::UseG;
+				const char *filename = ExportTextureChannels(
+					filenameWithoutExt.c_str(),
+					ExportTextureChannelMode::UseR, Params.Normal,
+					modeG, Params.Normal,
+					ExportTextureChannelMode::UseB, Params.Normal,
+					ExportTextureChannelMode::AllOne, NULL
+				);
+				if (filename)
+				{
+					ImagesWithoutExtMap[filenameWithoutExt] = filename;
+				}
+			}
+			auto filenameIter = ImagesWithoutExtMap.find(filenameWithoutExt);
+			if (filenameIter != ImagesWithoutExtMap.cend()) // false only if ExportTextureChannels() failed
+			{
+				int index = Images.AddUnique(filenameIter->second.c_str());
+				info.NormalIndex = index;
+			}
+		}
 #endif
 #if EXPORT_GLTF_MATERIAL_EMISSIVE
-		PROC(Emissive);
+		if (Params.Emissive)
+		{
+			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s", Params.Emissive->Name);
+			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
+			{
+				const char *filename = ExportTextureChannels(
+					filenameWithoutExt.c_str(),
+					ExportTextureChannelMode::UseR, Params.Emissive,
+					ExportTextureChannelMode::UseG, Params.Emissive,
+					ExportTextureChannelMode::UseB, Params.Emissive,
+					ExportTextureChannelMode::UseA, Params.Emissive // Alpha should not be needed, but doesn't hurt to preserve a possible custom channel
+				);
+				if (filename)
+				{
+					ImagesWithoutExtMap[filenameWithoutExt] = filename;
+				}
+			}
+			auto filenameIter = ImagesWithoutExtMap.find(filenameWithoutExt);
+			if (filenameIter != ImagesWithoutExtMap.cend()) // false only if ExportTextureChannels() failed
+			{
+				int index = Images.AddUnique(filenameIter->second.c_str());
+				info.EmissiveIndex = index;
+			}
+		}
 #endif
-#if EXPORT_GLTF_MATERIAL_AO
-		PROC(Occlusion);
-#endif
-#if EXPORT_GLTF_MATERIAL_ROUGHMET
-		PROC(Material);
+#if EXPORT_GLTF_MATERIAL_ROUGHMET || EXPORT_GLTF_MATERIAL_AO
+		if (Params.Material != NULL || Params.Occlusion != NULL || Params.SpecPower != NULL)
+		{
+			UUnrealMaterial* matAO = NULL;
+			UUnrealMaterial* matRoughness = NULL;
+			UUnrealMaterial* matMetallic = NULL;
+			UUnrealMaterial* matCustom = NULL;
+			ExportTextureChannelMode modeAO = ExportTextureChannelMode::AllOne;
+			ExportTextureChannelMode modeRoughness = ExportTextureChannelMode::AllOne;
+			ExportTextureChannelMode modeMetallic = ExportTextureChannelMode::AllZero; // since at least one PBR parameter is supplied, it is not purely diffuse => don't default to metallic
+			ExportTextureChannelMode modeCustom = ExportTextureChannelMode::AllOne;
+			if (Params.Material)
+			{
+				matAO = Params.Material;
+				modeAO = ExportTextureChannelMode::UseR;
+				matRoughness = Params.Material;
+				modeRoughness = ExportTextureChannelMode::UseG;
+				matMetallic = Params.Material;
+				modeMetallic = ExportTextureChannelMode::UseB;
+				matCustom = Params.Material;
+				modeCustom = ExportTextureChannelMode::UseA;
+			}
+			// if both material and AO/SpecPower are present, AO/SpecPower should probably override
+			if (Params.Occlusion)
+			{
+				matAO = Params.Occlusion;
+				modeAO = ExportTextureChannelMode::UseR;
+			}
+			if (Params.SpecPower)
+			{
+				matRoughness = Params.SpecPower;
+				modeRoughness = ExportTextureChannelMode::UseOneMinusR; // Caution: could also be only in G?
+			}
+
+			// combination of textures could be different per Material => name per material
+			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s_orm", Lod.Sections[i].Material->Name);
+			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
+			{
+				const char *filename = ExportTextureChannels(
+					filenameWithoutExt.c_str(),
+					modeAO, matAO,
+					modeRoughness, matRoughness,
+					modeMetallic, matMetallic,
+					modeCustom, matCustom // Alpha should not be needed, but doesn't hurt to preserve a possible custom channel
+				);
+				if (filename)
+				{
+					ImagesWithoutExtMap[filenameWithoutExt] = filename;
+				}
+			}
+			auto filenameIter = ImagesWithoutExtMap.find(filenameWithoutExt);
+			if (filenameIter != ImagesWithoutExtMap.cend()) // false only if ExportTextureChannels() failed
+			{
+				int index = Images.AddUnique(filenameIter->second.c_str());
+				info.MaterialIndex = index;
+			}
+		}
 #endif
 #if EXPORT_GLTF_MATERIAL_SPECULAR
-		PROC(Specular);
-		PROC(SpecPower);
+		if (Params.Specular)
+		{
+			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s", Params.Specular->Name);
+			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
+			{
+				const char *filename = ExportTextureChannels(
+					filenameWithoutExt.c_str(),
+					ExportTextureChannelMode::UseR, Params.Specular,
+					ExportTextureChannelMode::UseG, Params.Specular,
+					ExportTextureChannelMode::UseB, Params.Specular,
+					ExportTextureChannelMode::UseA, Params.Specular // Alpha should not be needed, but doesn't hurt to preserve a possible custom channel
+				);
+				if (filename)
+				{
+					ImagesWithoutExtMap[filenameWithoutExt] = filename;
+				}
+			}
+			auto filenameIter = ImagesWithoutExtMap.find(filenameWithoutExt);
+			if (filenameIter != ImagesWithoutExtMap.cend()) // false only if ExportTextureChannels() failed
+			{
+				int index = Images.AddUnique(filenameIter->second.c_str());
+				info.SpecularIndex = index;
+			}
+		}
 #endif
 	}
 	unguard;
@@ -1083,9 +1229,18 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 		for (int i = 0; i < Images.Num(); i++)
 		{
 			const char *relativeName = strrchr(*Images[i], '/');
-			if (!relativeName) relativeName = strrchr(*Images[i], '\\');
-			if (relativeName) relativeName++;
-			else relativeName = *Images[i];
+			if (!relativeName)
+			{
+				relativeName = strrchr(*Images[i], '\\');
+			}
+			if (relativeName)
+			{
+				relativeName -= 8; // length of "gltf_tex"
+			}
+			else
+			{
+				relativeName = *Images[i];
+			}
 			Ar.Printf(
 				"    {\n"
 				"      \"uri\" : \"%s\"\n"
@@ -1217,44 +1372,24 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 			);
 		}
 
-		if (info.SpecularIndex >= 0 || info.SpecPowerIndex >= 0)
+		if (info.SpecularIndex >= 0)
 		{
 			usedSpecularAndIOR = true;
 			Ar.Printf(
 				",\n"
             	"      \"extensions\": {\n"
                 "        \"KHR_materials_specular\": {\n"
-			);
-			if (info.SpecularIndex >= 0)
-			{
-				Ar.Printf(
-					"          \"specularColorTexture\": {\n"
-					"            \"index\" : %d,\n"
-					"            \"texCoord\" : %d\n"
-					"          }",
-					info.SpecularIndex,
-					0
-				);
-			}
-			else
-			{
-				// TODO: This use of SpecPower is based on UnRenderer.cpp. I'm not sure it is correct.
-				// It probably also doesn't use the correct channel.
-				Ar.Printf(
-					"          \"specularTexture\": {\n"
-					"            \"index\" : %d,\n"
-					"            \"texCoord\" : %d\n"
-					"          }",
-					info.SpecPowerIndex,
-					0
-				);
-			}
-			Ar.Printf(
-                "        },\n"
+				"          \"specularColorTexture\": {\n"
+				"            \"index\" : %d,\n"
+				"            \"texCoord\" : %d\n"
+				"          }"
+				"        },\n"
                 "        \"KHR_materials_ior\": {\n"
                 "          \"ior\": 0\n"
                 "        }\n"
-            	"      }"
+            	"      }",
+				info.SpecularIndex,
+				0
 			);
 		}
 
@@ -1318,7 +1453,8 @@ static void ExportMeshLod(GLTFExportContext& Context, const CBaseMeshLod& Lod, i
 	}
 
 	// Materials
-	ExportMaterials(Context, Ar, Lod);
+	bool flipNormals = Verts[0].Normal.GetW() < 0; // umodel stores handedness in normal.W; handedness should be consistent
+	ExportMaterials(Context, Ar, Lod, flipNormals);
 
 	// Meshes
 	Ar.Printf(
