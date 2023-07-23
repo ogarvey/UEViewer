@@ -408,6 +408,15 @@ void CSkelMeshViewer::Draw2D()
 		case EAnimRetargetingMode::AnimRotationOnly:
 			OnOffStatus = S_YELLOW "force mesh translation";
 			break;
+		case EAnimRetargetingMode::AnimScaled:
+			OnOffStatus = S_YELLOW "animation scaled";
+			break;
+		case EAnimRetargetingMode::AnimRelative:
+			OnOffStatus = S_YELLOW "animation relative";
+			break;
+		case EAnimRetargetingMode::OrientScale:
+			OnOffStatus = S_YELLOW "orient and scale";
+			break;
 		case EAnimRetargetingMode::NoRetargeting:
 			OnOffStatus = S_RED "disabled";
 			break;

@@ -314,6 +314,9 @@ enum class EAnimRetargetingMode
 	AnimSet = 0,
 	// Force AnimRotationOnly enabled on all AnimSets, but for this SkeletalMesh only
 	AnimRotationOnly,
+	AnimScaled,
+	AnimRelative,
+	OrientScale,
 	// Always pick data from the animation, no retargeting
 	NoRetargeting,
 
@@ -389,10 +392,27 @@ public:
 		return false;
 #else
 		// Global override
+
 		if (RetargetingMode == EAnimRetargetingMode::AnimRotationOnly)
+		{
 			return EBoneRetargetingMode::Mesh;
+		}
+		else if (RetargetingMode == EAnimRetargetingMode::AnimScaled)
+		{
+			return EBoneRetargetingMode::AnimationScaled;
+		}
+		else if (RetargetingMode == EAnimRetargetingMode::AnimRelative)
+		{
+			return EBoneRetargetingMode::AnimationRelative;
+		}
+		else if (RetargetingMode == EAnimRetargetingMode::OrientScale)
+		{
+			return EBoneRetargetingMode::OrientAndScale;
+		}
 		else if (RetargetingMode == EAnimRetargetingMode::NoRetargeting)
+		{
 			return EBoneRetargetingMode::Animation;
+		}
 
 		// Per-bone settings
 		if (BoneModes.IsValidIndex(BoneIndex))
