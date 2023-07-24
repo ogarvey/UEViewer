@@ -1157,19 +1157,32 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 				modeCustom = ExportTextureChannelMode::UseA;
 			}
 			// if both material and AO/SpecPower are present, AO/SpecPower should probably override
-			if (Params.Occlusion)
+			if (Params.Occlusion && Params.Occlusion != Params.Material)
 			{
 				matAO = Params.Occlusion;
 				modeAO = ExportTextureChannelMode::UseR;
 			}
-			if (Params.SpecPower)
+			if (Params.SpecPower && Params.SpecPower != Params.Material)
 			{
 				matRoughness = Params.SpecPower;
 				modeRoughness = ExportTextureChannelMode::UseOneMinusR; // Caution: could also be only in G?
 			}
 
 			// combination of textures could be different per Material => name per material
-			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s_orm", Lod.Sections[i].Material->Name);
+			std::string filenameWithoutExt;
+			if (Params.Material != NULL && Params.Occlusion == NULL && Params.SpecPower == NULL)
+			{
+				filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s", Params.Material->Name);
+			}
+			else
+			{
+				filenameWithoutExt = GetExportFileName(
+					OriginalMesh,
+					"gltf_tex/orm_%s_%s_%s",
+					Params.Material ? Params.Material->Name : "",
+					Params.Occlusion ? Params.Occlusion->Name : "",
+					Params.SpecPower ? Params.SpecPower->Name : "");
+			}
 			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
 			{
 				const char *filename = ExportTextureChannels(
