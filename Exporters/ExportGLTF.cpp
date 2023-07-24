@@ -1201,7 +1201,14 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 			if (filenameIter != ImagesWithoutExtMap.cend()) // false only if ExportTextureChannels() failed
 			{
 				int index = Images.AddUnique(filenameIter->second.c_str());
+				if (Params.Material != NULL || Params.SpecPower != NULL)
+				{
 				info.MaterialIndex = index;
+			}
+				if (Params.Material != NULL || Params.Occlusion != NULL)
+				{
+					info.OcclusionIndex = index;
+				}
 			}
 		}
 #endif
