@@ -986,6 +986,7 @@ struct MaterialIndices
 	int MaterialIndex;
 	int SpecularIndex;
 	int SpecPowerIndex;
+	bool UseOpacity;
 
 	MaterialIndices()
 	: DiffuseIndex(-1)
@@ -995,6 +996,7 @@ struct MaterialIndices
 	, MaterialIndex(-1)
 	, SpecularIndex(-1)
 	, SpecPowerIndex(-1)
+	, UseOpacity(false)
 	{}
 };
 
@@ -1057,6 +1059,20 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 #if EXPORT_GLTF_MATERIAL_DIFFUSE
 		if (Params.Diffuse)
 		{
+			ExportTextureChannelMode modeAlpha;
+			UUnrealMaterial* sourceAlpha;
+			if (Params.Opacity)
+			{
+				modeAlpha = ExportTextureChannelMode::UseR;
+				sourceAlpha = Params.Opacity;
+				info.UseOpacity = true;
+			}
+			else
+			{
+				modeAlpha = ExportTextureChannelMode::UseA;
+				sourceAlpha = Params.Diffuse;
+				// TODO: check if alpha channel is used => set UseOpacity
+			}
 			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s", Params.Diffuse->Name);
 			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
 			{
@@ -1065,7 +1081,7 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 					ExportTextureChannelMode::UseR, Params.Diffuse,
 					ExportTextureChannelMode::UseG, Params.Diffuse,
 					ExportTextureChannelMode::UseB, Params.Diffuse,
-					ExportTextureChannelMode::UseA, Params.Diffuse
+					modeAlpha, sourceAlpha
 				);
 				if (filename)
 				{
@@ -1203,8 +1219,8 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 				int index = Images.AddUnique(filenameIter->second.c_str());
 				if (Params.Material != NULL || Params.SpecPower != NULL)
 				{
-				info.MaterialIndex = index;
-			}
+					info.MaterialIndex = index;
+				}
 				if (Params.Material != NULL || Params.Occlusion != NULL)
 				{
 					info.OcclusionIndex = index;
@@ -1389,6 +1405,14 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 				"      }",
 				info.OcclusionIndex,
 				0
+			);
+		}
+
+		if (info.UseOpacity)
+		{
+			Ar.Printf(
+				",\n"
+				"      \"alphaMode\" : \"BLEND\""
 			);
 		}
 
