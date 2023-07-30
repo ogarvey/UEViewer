@@ -829,6 +829,61 @@ public:
 #endif
 };
 
+struct FMaterialSequenceItem
+{
+	UUnrealMaterial*	Material;
+	float				Time;
+	byte				Action;
+
+#if DECLARE_VIEWER_PROPS
+	DECLARE_STRUCT(FMaterialSequenceItem)
+	BEGIN_PROP_TABLE
+		PROP_OBJ(Material)
+		PROP_FLOAT(Time)
+		PROP_BYTE(Action)
+	END_PROP_TABLE
+#endif // DECLARE_VIEWER_PROPS
+};
+
+class UMaterialSequence : public UModifier
+{
+	DECLARE_CLASS(UMaterialSequence, UModifier);
+public:
+	TArray<FMaterialSequenceItem> SequenceItems;
+	byte TriggerAction;
+	bool Loop;
+	bool Paused;
+	float CurrentTime;
+	float LastTime;
+	float TotalTime;
+
+	BEGIN_PROP_TABLE
+		PROP_ARRAY(SequenceItems, "FMaterialSequenceItem")
+		PROP_BYTE(TriggerAction)
+		PROP_BOOL(Loop)
+		PROP_BOOL(Paused)
+		PROP_FLOAT(CurrentTime)
+		PROP_FLOAT(LastTime)
+		PROP_FLOAT(TotalTime)
+	END_PROP_TABLE
+};
+
+class UMaterialSwitch : public UModifier
+{
+	DECLARE_CLASS(UMaterialSwitch, UModifier);
+public:
+	int Current;
+	TArray<UUnrealMaterial*>	Materials;
+
+	UMaterialSwitch() :
+		Current(0)
+	{}
+
+	BEGIN_PROP_TABLE
+		PROP_INT(Current)
+		PROP_ARRAY(Materials, PropType::UObject)
+	END_PROP_TABLE
+};
 
 enum EColorOperation
 {
@@ -1398,6 +1453,9 @@ public:
 	REGISTER_CLASS(UTexture)			\
 	REGISTER_CLASS(UCubemap)			\
 	REGISTER_CLASS(UFinalBlend)			\
+	REGISTER_CLASS(FMaterialSequenceItem)	\
+	REGISTER_CLASS(UMaterialSequence)	\
+	REGISTER_CLASS(UMaterialSwitch)		\
 	REGISTER_CLASS(UTexCoordSource)		\
 	REGISTER_CLASS(UTexEnvMap)			\
 	REGISTER_CLASS(UTexOscillator)		\
