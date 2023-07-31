@@ -281,6 +281,44 @@ public:
 	END_PROP_TABLE
 };
 
+enum EColorFadeType
+{
+	FC_Linear = 0,
+	FC_Sinusoidal = 1
+};
+
+_ENUM(EColorFadeType)
+{
+	_E(FC_Linear),
+	_E(FC_Sinusoidal)
+};
+
+class UFadeColor : public UConstantMaterial
+{
+	DECLARE_CLASS(UFadeColor, UConstantMaterial);
+public:
+	UFadeColor() :
+		Color1(0, 0, 0, 0),
+		Color2(0, 0, 0, 0),
+		FadePeriod(0.f),
+		FadePhase(0.0f),
+		ColorFadeType(FC_Linear)
+	{}
+
+	FColor Color1;
+	FColor Color2;
+	float FadePeriod;
+	float FadePhase;
+	EColorFadeType ColorFadeType;
+
+	BEGIN_PROP_TABLE
+		PROP_COLOR(Color1)
+		PROP_COLOR(Color2)
+		PROP_FLOAT(FadePeriod)
+		PROP_FLOAT(FadePhase)
+		PROP_ENUM2(ColorFadeType, EColorFadeType)
+	END_PROP_TABLE
+};
 
 enum ETextureFormat
 {
@@ -829,18 +867,48 @@ public:
 #endif
 };
 
+enum EMaterialSequenceTriggerActon
+{
+    MSTA_Ignore             =0,
+    MSTA_Reset              =1,
+    MSTA_Pause              =2,
+    MSTA_Stop               =3,
+    MSTA_MAX                =4,
+};
+
+_ENUM(EMaterialSequenceTriggerActon)
+{
+	_E(MSTA_Ignore),
+	_E(MSTA_Reset),
+	_E(MSTA_Pause),
+	_E(MSTA_Stop),
+};
+
+enum EMaterialSequenceAction
+{
+    MSA_ShowMaterial        =0,
+    MSA_FadeToMaterial      =1,
+    MSA_MAX                 =2,
+};
+
+_ENUM(EMaterialSequenceAction)
+{
+	_E(MSA_ShowMaterial),
+	_E(MSA_FadeToMaterial),
+};
+
 struct FMaterialSequenceItem
 {
 	UUnrealMaterial*	Material;
 	float				Time;
-	byte				Action;
+	EMaterialSequenceAction	Action;
 
 #if DECLARE_VIEWER_PROPS
 	DECLARE_STRUCT(FMaterialSequenceItem)
 	BEGIN_PROP_TABLE
 		PROP_OBJ(Material)
 		PROP_FLOAT(Time)
-		PROP_BYTE(Action)
+		PROP_ENUM2(Action, EMaterialSequenceAction)
 	END_PROP_TABLE
 #endif // DECLARE_VIEWER_PROPS
 };
@@ -850,7 +918,7 @@ class UMaterialSequence : public UModifier
 	DECLARE_CLASS(UMaterialSequence, UModifier);
 public:
 	TArray<FMaterialSequenceItem> SequenceItems;
-	byte TriggerAction;
+	EMaterialSequenceTriggerActon TriggerAction;
 	bool Loop;
 	bool Paused;
 	float CurrentTime;
@@ -859,7 +927,7 @@ public:
 
 	BEGIN_PROP_TABLE
 		PROP_ARRAY(SequenceItems, "FMaterialSequenceItem")
-		PROP_BYTE(TriggerAction)
+		PROP_ENUM2(TriggerAction, EMaterialSequenceTriggerActon)
 		PROP_BOOL(Loop)
 		PROP_BOOL(Paused)
 		PROP_FLOAT(CurrentTime)
@@ -963,7 +1031,6 @@ public:
 	}
 #endif
 };
-
 
 enum ETexCoordSrc
 {
@@ -1446,6 +1513,7 @@ public:
 #define REGISTER_MATERIAL_CLASSES		\
 	REGISTER_CLASS(UColorModifier)		\
 	REGISTER_CLASS(UConstantColor)		\
+	REGISTER_CLASS(UFadeColor)			\
 	REGISTER_CLASS(UBitmapMaterial)		\
 	REGISTER_CLASS(UPalette)			\
 	REGISTER_CLASS(UShader)				\
@@ -1478,13 +1546,16 @@ public:
 	REGISTER_ENUM(ETexClampMode)		\
 	REGISTER_ENUM(EOutputBlending)		\
 	REGISTER_ENUM(EFrameBufferBlending)	\
+	REGISTER_ENUM(EColorFadeType)		\
 	REGISTER_ENUM(EColorOperation)		\
 	REGISTER_ENUM(EAlphaOperation)		\
 	REGISTER_ENUM(ETexCoordSrc)			\
 	REGISTER_ENUM(ETexCoordCount)		\
 	REGISTER_ENUM(ETexEnvMapType)		\
 	REGISTER_ENUM(ETexOscillationType)	\
-	REGISTER_ENUM(ETexRotationType)
+	REGISTER_ENUM(ETexRotationType)		\
+	REGISTER_ENUM(EMaterialSequenceAction)	\
+	REGISTER_ENUM(EMaterialSequenceTriggerActon)	\
 
 
 #endif // __UNMATERIAL2_H__
