@@ -86,13 +86,28 @@ enum class ExportTextureChannelMode
 	UseOneMinusR, UseOneMinusG, UseOneMinusB, UseOneMinusA
 	// Caution: order of values is used in ExportTextureChannels
 };
+enum class TextureChannelValues
+{
+	Unset,
+	Mixed,
+	AllZero,
+	AllOne
+};
+struct TextureAnalysisResult
+{
+	TextureChannelValues ValuesR;
+	TextureChannelValues ValuesG;
+	TextureChannelValues ValuesB;
+	TextureChannelValues ValuesA;
+};
 // return: export path including extension or null on error; is static, i.e. does not have to be deleted but gets changed on next call
 const char* ExportTextureChannels(
 	const char* pathWithoutExt,
 	ExportTextureChannelMode modeR, const UUnrealMaterial* TexR,
 	ExportTextureChannelMode modeG, const UUnrealMaterial* TexG,
 	ExportTextureChannelMode modeB, const UUnrealMaterial* TexB,
-	ExportTextureChannelMode modeA, const UUnrealMaterial* TexA);
+	ExportTextureChannelMode modeA, const UUnrealMaterial* TexA,
+	TextureAnalysisResult* outAnalysis = NULL);
 // UUnrealMaterial
 void ExportMaterial(const UUnrealMaterial* Mat);
 // sound

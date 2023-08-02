@@ -595,7 +595,8 @@ const char* ExportTextureChannels(
 	ExportTextureChannelMode modeR, const UUnrealMaterial* TexR,
 	ExportTextureChannelMode modeG, const UUnrealMaterial* TexG,
 	ExportTextureChannelMode modeB, const UUnrealMaterial* TexB,
-	ExportTextureChannelMode modeA, const UUnrealMaterial* TexA)
+	ExportTextureChannelMode modeA, const UUnrealMaterial* TexA,
+	TextureAnalysisResult* outAnalysis)
 {
 	bool success = false;
 	byte* bytesR = NULL;
@@ -605,14 +606,37 @@ const char* ExportTextureChannels(
 	int sizeU = 0;
 	int sizeV = 0;
 	int isFloat = -1;
-	const std::vector<std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**>> channels =
+
+	const std::vector<std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**, TextureChannelValues*>> channels =
 	{
-		{modeR, TexR, &bytesR},
-		{modeG, TexG, &bytesG},
-		{modeB, TexB, &bytesB},
-		{modeA, TexA, &bytesA}
+		{modeR, TexR, &bytesR, outAnalysis ? &outAnalysis->ValuesR : NULL},
+		{modeG, TexG, &bytesG, outAnalysis ? &outAnalysis->ValuesG : NULL},
+		{modeB, TexB, &bytesB, outAnalysis ? &outAnalysis->ValuesB : NULL},
+		{modeA, TexA, &bytesA, outAnalysis ? &outAnalysis->ValuesA : NULL}
 	};
-	for (const std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**>& channel : channels)
+
+	if (outAnalysis)
+	{
+		for (const std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**, TextureChannelValues*>& channel : channels)
+		{
+			ExportTextureChannelMode mode = std::get<0>(channel);
+			TextureChannelValues* values = std::get<3>(channel);
+			switch (mode)
+			{
+			case ExportTextureChannelMode::AllZero:
+				*values = TextureChannelValues::AllZero;
+				break;
+			case ExportTextureChannelMode::AllOne:
+				*values = TextureChannelValues::AllOne;
+				break;
+			default:
+				*values = TextureChannelValues::Unset;
+				break;
+			}
+		}
+	}
+
+	for (const std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**, TextureChannelValues*>& channel : channels)
 	{
 		ExportTextureChannelMode mode = std::get<0>(channel);
 		const UUnrealMaterial* Tex = std::get<1>(channel);
@@ -659,10 +683,11 @@ const char* ExportTextureChannels(
 	byte* writePtr = bytesCombined;
 	for (int i = 0; i < sizeU * sizeV; ++i)
 	{
-		for (const std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**>& channel : channels)
+		for (const std::tuple<ExportTextureChannelMode, const UUnrealMaterial*, byte**, TextureChannelValues*>& channel : channels)
 		{
 			ExportTextureChannelMode mode = std::get<0>(channel);
 			byte* sourceData = *std::get<2>(channel);
+			TextureChannelValues* channelValues = std::get<3>(channel);
 			if (isFloat == 1)
 			{
 				float output;
@@ -676,7 +701,6 @@ const char* ExportTextureChannels(
 					break;
 				default:
 				{
-					int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseR);
 					if (mode >= ExportTextureChannelMode::UseOneMinusR)
 					{
 						int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseOneMinusR);
@@ -686,6 +710,41 @@ const char* ExportTextureChannels(
 					{
 						int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseR);
 						output = ((float*)sourceData)[4 * i + offset];
+					}
+					if (channelValues)
+					{
+						switch (*channelValues)
+						{
+						case TextureChannelValues::Unset:
+							if (output == 0.0f)
+							{
+								*channelValues = TextureChannelValues::AllZero;
+							}
+							else if (output == 1.0f)
+							{
+								*channelValues = TextureChannelValues::AllOne;
+							}
+							else
+							{
+								*channelValues = TextureChannelValues::Mixed;
+							}
+							break;
+						case TextureChannelValues::Mixed:
+							// can't change anymore
+							break;
+						case TextureChannelValues::AllZero:
+							if (output != 0.0f)
+							{
+								*channelValues = TextureChannelValues::Mixed;
+							}
+							break;
+						case TextureChannelValues::AllOne:
+							if (output != 1.0f)
+							{
+								*channelValues = TextureChannelValues::Mixed;
+							}
+							break;
+						}
 					}
 					break;
 				}
@@ -705,7 +764,6 @@ const char* ExportTextureChannels(
 					break;
 				default:
 				{
-					int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseR);
 					if (mode >= ExportTextureChannelMode::UseOneMinusR)
 					{
 						int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseOneMinusR);
@@ -715,6 +773,41 @@ const char* ExportTextureChannels(
 					{
 						int offset = static_cast<int>(mode) - static_cast<int>(ExportTextureChannelMode::UseR);
 						output = sourceData[4 * i + offset];
+					}
+					if (channelValues)
+					{
+						switch (*channelValues)
+						{
+						case TextureChannelValues::Unset:
+							if (output == 0)
+							{
+								*channelValues = TextureChannelValues::AllZero;
+							}
+							else if (output == 255)
+							{
+								*channelValues = TextureChannelValues::AllOne;
+							}
+							else
+							{
+								*channelValues = TextureChannelValues::Mixed;
+							}
+							break;
+						case TextureChannelValues::Mixed:
+							// can't change anymore
+							break;
+						case TextureChannelValues::AllZero:
+							if (output != 0)
+							{
+								*channelValues = TextureChannelValues::Mixed;
+							}
+							break;
+						case TextureChannelValues::AllOne:
+							if (output != 255)
+							{
+								*channelValues = TextureChannelValues::Mixed;
+							}
+							break;
+						}
 					}
 					break;
 				}
