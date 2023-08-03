@@ -1042,6 +1042,7 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 	TArray<MaterialIndices> Materials;
 	TArray<FString> Images;
 	std::map<std::string, std::string> ImagesWithoutExtMap;
+	std::map<std::string, TextureAnalysisResult> TextureAnalysisMap;
 
 	guard(ExportMaterials::CreateFiles);
 
@@ -1065,27 +1066,28 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 			{
 				modeAlpha = ExportTextureChannelMode::UseR;
 				sourceAlpha = Params.Opacity;
-				info.UseOpacity = true;
 			}
 			else
 			{
 				modeAlpha = ExportTextureChannelMode::UseA;
 				sourceAlpha = Params.Diffuse;
-				// TODO: check if alpha channel is used => set UseOpacity
 			}
 			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s", Params.Diffuse->Name);
 			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
 			{
+				TextureAnalysisResult textureAnalysis;
 				const char *filename = ExportTextureChannels(
 					filenameWithoutExt.c_str(),
 					ExportTextureChannelMode::UseR, Params.Diffuse,
 					ExportTextureChannelMode::UseG, Params.Diffuse,
 					ExportTextureChannelMode::UseB, Params.Diffuse,
-					modeAlpha, sourceAlpha
+					modeAlpha, sourceAlpha,
+					&textureAnalysis
 				);
 				if (filename)
 				{
 					ImagesWithoutExtMap[filenameWithoutExt] = filename;
+					TextureAnalysisMap[filenameWithoutExt] = textureAnalysis;
 				}
 			}
 			auto filenameIter = ImagesWithoutExtMap.find(filenameWithoutExt);
@@ -1093,6 +1095,10 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 			{
 				int index = Images.AddUnique(filenameIter->second.c_str());
 				info.DiffuseIndex = index;
+				// opacity all 1 = default, opacity all 0 doesn't make sense, heuristic probably failed;
+				// alpha channel might not be opacity (can be specular mask or emission mask), but the user would see
+				// holes in the model and could fix the file manually.
+				info.UseOpacity = (TextureAnalysisMap[filenameWithoutExt].ValuesA == TextureChannelValues::Mixed);
 			}
 		}
 #endif
@@ -1201,27 +1207,32 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 			}
 			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
 			{
+				TextureAnalysisResult textureAnalysis;
 				const char *filename = ExportTextureChannels(
 					filenameWithoutExt.c_str(),
 					modeAO, matAO,
 					modeRoughness, matRoughness,
 					modeMetallic, matMetallic,
-					modeCustom, matCustom // Alpha should not be needed, but doesn't hurt to preserve a possible custom channel
+					modeCustom, matCustom, // Alpha should not be needed, but doesn't hurt to preserve a possible custom channel
+					&textureAnalysis
 				);
 				if (filename)
 				{
 					ImagesWithoutExtMap[filenameWithoutExt] = filename;
+					TextureAnalysisMap[filenameWithoutExt] = textureAnalysis;
 				}
 			}
 			auto filenameIter = ImagesWithoutExtMap.find(filenameWithoutExt);
 			if (filenameIter != ImagesWithoutExtMap.cend()) // false only if ExportTextureChannels() failed
 			{
 				int index = Images.AddUnique(filenameIter->second.c_str());
+				TextureAnalysisResult textureAnalysis = TextureAnalysisMap[filenameWithoutExt];
 				if (Params.Material != NULL || Params.SpecPower != NULL)
 				{
 					info.MaterialIndex = index;
 				}
-				if (Params.Material != NULL || Params.Occlusion != NULL)
+				// occlusion all 1 = default, occlusion all 0 doesn't make sense, heuristic probably failed
+				if (textureAnalysis.ValuesR == TextureChannelValues::Mixed)
 				{
 					info.OcclusionIndex = index;
 				}
