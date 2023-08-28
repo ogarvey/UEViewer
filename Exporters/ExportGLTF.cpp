@@ -1105,8 +1105,8 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 #if EXPORT_GLTF_MATERIAL_NORMAL
 		if (Params.Normal)
 		{
-			// custom suffix for possibly converted handedness
-			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s_rh", Params.Normal->Name);
+			// custom suffix if converting handedness
+			std::string filenameWithoutExt = GetExportFileName(OriginalMesh, "gltf_tex/%s%s", Params.Normal->Name, flipNormals ? "_rh" : "");
 			if (ImagesWithoutExtMap.find(filenameWithoutExt) == ImagesWithoutExtMap.cend())
 			{
 				ExportTextureChannelMode modeG = flipNormals ? ExportTextureChannelMode::UseOneMinusG : ExportTextureChannelMode::UseG;
