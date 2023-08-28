@@ -1050,6 +1050,10 @@ static void ExportMaterials(GLTFExportContext& Context, FArchive& Ar, const CBas
 	appMakeDirectory(GetExportFileName(OriginalMesh, "gltf_tex"));
 
 	for (int i = 0; i < Lod.Sections.Num(); i++) {
+		// Note: we could deduplicate materials between sections, but:
+		// 1. Separate material slots might be changed deparately in the game.
+		// 2. At least Blender will not differentiate between sections, but you can still select by material
+
 		Materials.AddDefaulted();
 		MaterialIndices& info = Materials[Materials.Num()-1];
 		if (!Lod.Sections[i].Material)
