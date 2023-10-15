@@ -603,6 +603,8 @@ const char* ExportTextureChannels(
 	byte* bytesG = NULL;
 	byte* bytesB = NULL;
 	byte* bytesA = NULL;
+	// must define early to set to NULL before first "goto cleanup". Otherwise it would be uninit in cleanup.
+	byte* bytesCombined = NULL;
 	int sizeU = 0;
 	int sizeV = 0;
 	int isFloat = -1;
@@ -679,7 +681,7 @@ const char* ExportTextureChannels(
 		goto cleanup;
 	}
 	int bytesPerChannel = isFloat == 1 ? sizeof(float) : sizeof(byte);
-	byte* bytesCombined = (byte*)appMallocNoInit(sizeU * sizeV * 4 * bytesPerChannel);
+	bytesCombined = (byte*)appMallocNoInit(sizeU * sizeV * 4 * bytesPerChannel);
 	byte* writePtr = bytesCombined;
 	for (int i = 0; i < sizeU * sizeV; ++i)
 	{
