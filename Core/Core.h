@@ -12,7 +12,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include <new>
 
 #if _MSC_VER
 #	include <intrin.h>
@@ -382,6 +381,12 @@ FORCEINLINE void operator delete[](void* ptr)
 FORCEINLINE void operator delete(void* ptr, size_t)
 {
 	appFree(ptr);
+}
+
+// inplace new
+FORCEINLINE void* operator new(size_t /*size*/, void* ptr)
+{
+	return ptr;
 }
 
 
