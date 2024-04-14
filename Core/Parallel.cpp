@@ -497,7 +497,7 @@ CPoolThread* AllocateFreeThread()
 	if (MaxThreads < 0)
 	{
 		MaxThreads = CThread::GetLogicalCPUCount();
-		MaxThreads = min(MaxThreads, MAX_POOL_THREADS);
+		MaxThreads = std::min(MaxThreads, MAX_POOL_THREADS);
 		--MaxThreads; // exclude main thread
 		if (!GEnableThreads) MaxThreads = 0;
 

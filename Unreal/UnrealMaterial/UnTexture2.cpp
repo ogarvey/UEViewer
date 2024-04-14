@@ -428,7 +428,7 @@ static byte *FindBioTexture(const UTexture *Tex)
 					appPrintf("Reading %s mip level %d (%dx%d) from %s\n", Tex->Name, 0, Tex->USize, Tex->VSize, *bulkFile->GetRelativeName());
 					FArchive *Reader = bulkFile->CreateReader();
 					Reader->Seek(Item.DataOffset);
-					byte *buf = (byte*)appMalloc(max(Item.DataSize, needSize));
+					byte *buf = (byte*)appMalloc(std::max(Item.DataSize, needSize));
 					Reader->Serialize(buf, Item.DataSize);
 					delete Reader;
 					return buf;

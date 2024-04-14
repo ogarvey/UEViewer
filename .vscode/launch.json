@@ -6,7 +6,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "(No arguments)",
+			"name": "VS (No arguments)",
 			"type": "cppvsdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/${input:ExeName}",
@@ -18,7 +18,7 @@
 			"visualizerFile": "${workspaceFolder}/Tools/umodel.natvis"
 		},
 		{
-			"name": "Volatile (cmdline.cfg)",
+			"name": "VS Volatile (cmdline.cfg)",
 			"type": "cppvsdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/${input:ExeName}",
@@ -28,7 +28,7 @@
 			"visualizerFile": "${workspaceFolder}/Tools/umodel.natvis"
 		},
 		{
-			"name": "UI Test",
+			"name": "VS UI Test",
 			"type": "cppvsdbg",
 			"request": "launch",
 			"preLaunchTask": "Build UITest",
@@ -37,6 +37,14 @@
 			"cwd": "${workspaceFolder}",
 			"logging": { "moduleLoad": false },
 			"visualizerFile": "${workspaceFolder}/Tools/umodel.natvis"
+		},
+		{
+			"name": "LLDB {No arguments}",
+			"type": "lldb",
+			"request": "launch",
+			"program": "${workspaceFolder}/${input:ExeName}",
+			"args": [],
+			"cwd": "${workspaceFolder}",
 		}
 	],
     "inputs": [

@@ -341,7 +341,7 @@ void FPakFile::Serialize(void *data, int size)
 
 				const FPakCompressedBlock& Block = Info->CompressionBlocks[BlockIndex];
 				int CompressedBlockSize = (int)(Block.CompressedEnd - Block.CompressedStart);
-				int UncompressedBlockSize = min((int)Info->CompressionBlockSize, (int)Info->UncompressedSize - UncompressedBufferPos); // don't pass file end
+				int UncompressedBlockSize = std::min((int)Info->CompressionBlockSize, (int)Info->UncompressedSize - UncompressedBufferPos); // don't pass file end
 				byte* CompressedData;
 				if (!Info->bEncrypted)
 				{
@@ -640,7 +640,7 @@ bool FPakVFS::DecryptPakIndex(TArray<byte>& IndexData, FString& ErrorString)
 	{
 		// Try decrypting a small amount of data with a current key
 		byte TestBuffer[256];
-		int TestLen = min(IndexData.Num(), ARRAY_COUNT(TestBuffer));
+		int TestLen = std::min(static_cast<size_t>(IndexData.Num()), ARRAY_COUNT(TestBuffer));
 		memcpy(TestBuffer, IndexData.GetData(), TestLen);
 		appDecryptAES(TestBuffer, TestLen, &Key[0], Key.Len());
 		FMemReader ValidatorReader(TestBuffer, TestLen);

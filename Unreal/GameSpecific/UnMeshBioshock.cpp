@@ -675,7 +675,7 @@ void USkeletalMesh::PostLoadBioshockMesh()
 		{
 			FMeshBone &B = RefSkeleton[i];
 			B.Name.Str    = Skel->m_bones[i]->m_name;				//?? hack: FName assignment
-			B.ParentIndex = max(Skel->m_parentIndices[i], (hkInt16)0);
+			B.ParentIndex = std::max(Skel->m_parentIndices[i], (hkInt16)0);
 			const hkQsTransform &t = Skel->m_referencePose[i];
 			B.BonePos.Orientation = (FQuat&)   t.m_rotation;
 			B.BonePos.Position    = (FVector&) t.m_translation;
@@ -695,7 +695,7 @@ void USkeletalMesh::PostLoadBioshockMesh()
 		{
 			FMeshBone &B = RefSkeleton[i];
 			B.Name.Str    = Skel->m_bones[i]->m_name;				//?? hack: FName assignment
-			B.ParentIndex = max(Skel->m_parentIndices[i], (hkInt16)0);
+			B.ParentIndex = std::max(Skel->m_parentIndices[i], (hkInt16)0);
 			const hkQsTransform &t = Skel->m_referencePose[i];
 			B.BonePos.Orientation = (FQuat&)   t.m_rotation;
 			B.BonePos.Position    = (FVector&) t.m_translation;

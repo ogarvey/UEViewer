@@ -1124,7 +1124,7 @@ const CGameFileInfo* CGameFileInfo::Find(const char *Filename, int GameFolder)
 		int matchWeight = 0;
 		const char *s = *InfoPath + InfoPath.Len() - 1;
 		const char *d = *FindPath + FindPath.Len() - 1;
-		int maxCheck = min(InfoPath.Len(), FindPath.Len());
+		int maxCheck = std::min(InfoPath.Len(), FindPath.Len());
 		// Check if FindPath matches end of InfoPath, case-insensitively
 		while (tolower(*s) == tolower(*d) && maxCheck > 0)
 		{

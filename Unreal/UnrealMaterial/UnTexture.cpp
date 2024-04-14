@@ -716,7 +716,7 @@ bool CTextureData::DecodeXBox360(int MipLevel)
 		appReverseBytes(buf, Mip.DataSize / 2, 2);
 	}
 
-	Mip.SetOwnedDataBuffer(buf, max(Mip.USize / Info.BlockSizeX, 1) * max(Mip.VSize / Info.BlockSizeY, 1) * Info.BytesPerBlock);
+	Mip.SetOwnedDataBuffer(buf, std::max(Mip.USize / Info.BlockSizeX, 1) * std::max(Mip.VSize / Info.BlockSizeY, 1) * Info.BytesPerBlock);
 	return true;	// no error
 
 	unguard;
@@ -766,8 +766,8 @@ static void UntileCompressedPS4Texture(const byte *src, byte *dst, int width, in
 	int blockHeight = height / blockSizeY;			// height of image in blocks
 
 	// PS4 image is encoded as 8x8 block min
-	int blockWidth2 = max(blockWidth, 8);
-	int blockHeight2 = max(blockHeight, 8);
+	int blockWidth2 = std::max(blockWidth, 8);
+	int blockHeight2 = std::max(blockHeight, 8);
 
 	// Iterate over image blocks
 	for (int sy = 0; sy < blockHeight2; sy++)
@@ -833,7 +833,7 @@ bool CTextureData::DecodePS4(int MipLevel)
 	byte *buf = (byte*)appMalloc(Mip.DataSize);
 	UntileCompressedPS4Texture(Mip.CompressedData, buf, Mip.USize, Mip.VSize, Info.BlockSizeX, Info.BlockSizeY, Info.BytesPerBlock);
 
-	Mip.SetOwnedDataBuffer(buf, max(UBlockSize, 1) * max(VBlockSize, 1) * Info.BytesPerBlock);
+	Mip.SetOwnedDataBuffer(buf, std::max(UBlockSize, 1) * std::max(VBlockSize, 1) * Info.BytesPerBlock);
 	return true;	// no error
 
 	unguard;
@@ -1014,7 +1014,7 @@ bool CTextureData::DecodeNSW(int MipLevel)
 		return false;
 	}
 
-	Mip.SetOwnedDataBuffer(buf, max(UBlockSize, 1) * max(VBlockSize, 1) * Info.BytesPerBlock);
+	Mip.SetOwnedDataBuffer(buf, std::max(UBlockSize, 1) * std::max(VBlockSize, 1) * Info.BytesPerBlock);
 	return true;	// no error
 
 	unguard;

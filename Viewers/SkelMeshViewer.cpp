@@ -508,7 +508,7 @@ void CSkelMeshViewer::Draw3D(float TimeDelta)
 	glGetLightfv(GL_LIGHT0, GL_AMBIENT, savedAmbient);
 	glGetLightfv(GL_LIGHT0, GL_DIFFUSE, savedDiffuse);
 
-	float highlightTime = max(TimeSinceCreate, 0);
+	float highlightTime = std::max(TimeSinceCreate, 0.0f);
 	static const float dark[4] = { 0.01f, 0.01f, 0.01f, 1.0f };
 
 	if (TaggedMeshes.Num() && (highlightTime < HIGHLIGHT_DURATION) && (HighlightInstance == NULL))

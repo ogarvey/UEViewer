@@ -13,6 +13,11 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <algorithm>
+
+#ifndef _MSC_VER
+#include <new>
+#endif
 
 #if _MSC_VER
 #	include <intrin.h>
@@ -90,11 +95,6 @@
 #define M_PI					(3.14159265358979323846)
 
 
-#undef min
-#undef max
-
-#define min(a,b)				( ((a) < (b)) ? (a) : (b) )
-#define max(a,b)				( ((a) > (b)) ? (a) : (b) )
 #define bound(a,minval,maxval)	( ((a) > (minval)) ? ( ((a) < (maxval)) ? (a) : (maxval) ) : (minval) )
 
 #define appFloor(x)				( (int)floor(x) )
@@ -365,12 +365,12 @@ FORCEINLINE void* operator new[](size_t size)
 	return appMalloc(size);
 }
 
-FORCEINLINE void operator delete(void* ptr)
+FORCEINLINE void operator delete(void* ptr) noexcept
 {
 	appFree(ptr);
 }
 
-FORCEINLINE void operator delete[](void* ptr)
+FORCEINLINE void operator delete[](void* ptr) noexcept
 {
 	appFree(ptr);
 }
@@ -379,16 +379,18 @@ FORCEINLINE void operator delete[](void* ptr)
 
 
 // C++17 (delete with alignment)
-FORCEINLINE void operator delete(void* ptr, size_t)
+FORCEINLINE void operator delete(void* ptr, size_t) noexcept
 {
 	appFree(ptr);
 }
 
+#if _MSC_VER
 // inplace new
 FORCEINLINE void* operator new(size_t /*size*/, void* ptr)
 {
 	return ptr;
 }
+#endif //_MSC_VER
 
 
 #define DEFAULT_ALIGNMENT		8

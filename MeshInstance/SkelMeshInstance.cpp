@@ -840,7 +840,7 @@ void CSkelMeshInstance::UpdateAnimation(float TimeDelta)
 					if (Chn->CurrentFrame >= Seq1->NumFrames-1)
 					{
 						// clamp time in a case NumFrames == 0
-						Chn->CurrentFrame = max(Seq1->NumFrames-1, 0);
+						Chn->CurrentFrame = std::max(Seq1->NumFrames-1, 0);
 					}
 				}
 				else
@@ -907,7 +907,7 @@ void CSkelMeshInstance::PlayAnimInternal(const char *AnimName, float Rate, float
 
 	Chn.Anim1          = NewAnim;
 	Chn.Anim2          = NULL;
-	Chn.CurrentFrame   = Chn.bReverse && !Chn.bLooped ? max(NewAnim->NumFrames - 1, 0) : 0;
+	Chn.CurrentFrame   = Chn.bReverse && !Chn.bLooped ? std::max(NewAnim->NumFrames - 1, 0) : 0;
 	Chn.SecondaryBlend = 0;
 	Chn.TweenTime      = TweenTime;
 

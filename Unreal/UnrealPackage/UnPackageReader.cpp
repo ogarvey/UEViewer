@@ -289,10 +289,10 @@ public:
 			return;
 
 		// Determine what needs to be decrypted
-		int StartOffset			= max(0, Pos - EncryptionStart);
-		int EndOffset			= min(EncryptionEnd, Pos + size) - EncryptionStart;
+		int StartOffset			= std::max(0, Pos - EncryptionStart);
+		int EndOffset			= std::min(EncryptionEnd, Pos + size) - EncryptionStart;
 		int CopySize			= EndOffset - StartOffset;
-		int CopyOffset			= max(0, EncryptionStart - Pos);
+		int CopyOffset			= std::max(0, EncryptionStart - Pos);
 
 		// Round to 16-byte AES blocks
 		int BlockStartOffset	= StartOffset & ~15;

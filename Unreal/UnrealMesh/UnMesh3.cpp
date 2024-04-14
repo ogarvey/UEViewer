@@ -2162,7 +2162,7 @@ void USkeletalMesh3::ConvertMesh()
 		const FStaticLODModel3 &SrcLod = LODModels[lod];
 		if (!SrcLod.Chunks.Num()) continue;
 
-		int NumTexCoords = max(SrcLod.NumUVSets, SrcLod.GPUSkin.NumUVSets);		// number of texture coordinates is serialized differently for some games
+		int NumTexCoords = std::max(SrcLod.NumUVSets, SrcLod.GPUSkin.NumUVSets);		// number of texture coordinates is serialized differently for some games
 		if (NumTexCoords > MAX_MESH_UV_SETS)
 			appError("SkeletalMesh has %d UV sets", NumTexCoords);
 

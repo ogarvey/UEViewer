@@ -307,7 +307,7 @@ static void GetTextExtents(const char* s, int &width, int &height, bool bHyperli
 		}
 		x += CHAR_WIDTH - FONT_SPACING;
 	}
-	width = max(x, w);
+	width = std::max(x, w);
 	height = h;
 }
 

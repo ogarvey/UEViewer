@@ -1033,8 +1033,8 @@ bool UTexture2D::GetTextureData(CTextureData &TexData) const
 			DstMip->SetBulkData(Bulk);
 			// Note: UE3 can store incorrect SizeX/SizeY for lowest mips - these values could have 4x4 for all smaller mips
 			// (perhaps minimal size of DXT block). So compute mip size by ourselves.
-			DstMip->USize = max(1, OrigUSize >> mipLevel);
-			DstMip->VSize = max(1, OrigVSize >> mipLevel);
+			DstMip->USize = std::max(1, OrigUSize >> mipLevel);
+			DstMip->VSize = std::max(1, OrigVSize >> mipLevel);
 //			printf("+%d: %d x %d (%X)\n", mipLevel, DstMip->USize, DstMip->VSize, DstMip->DataSize);
 			TexData.Platform = Package->Platform;
 		}

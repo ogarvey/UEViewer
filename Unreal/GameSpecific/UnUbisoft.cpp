@@ -126,7 +126,7 @@ public:
 				Ar << P.CompressedCrc << P.UncompressedCrc;
 			}
 			if (!P.CompressedSize)
-				P.CompressedSize = min(Remaining, BufferSize);	// size of uncompressed page
+				P.CompressedSize = std::min(Remaining, BufferSize);	// size of uncompressed page
 			// advance pointers
 			DataOffset += P.CompressedSize;
 			Remaining  -= BufferSize;

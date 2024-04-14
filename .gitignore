@@ -34,6 +34,7 @@ umodel.cfg
 # Executable files and pdb
 umodel[-_]*.exe
 umodel*.pdb
+umodel_64
 Tools/**/*.exe
 Tools/**/*.pdb
 *todo.md

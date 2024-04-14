@@ -144,7 +144,7 @@ static void CopyStream(FArchive *Src, FILE *Dst, int Count)
 
 	while (Count > 0)
 	{
-		int Size = min(Count, sizeof(buffer));
+		int Size = std::min(static_cast<size_t>(Count), sizeof(buffer));
 		Src->Serialize(buffer, Size);
 		if (fwrite(buffer, Size, 1, Dst) != 1) appError("Write failed");
 		Count -= Size;

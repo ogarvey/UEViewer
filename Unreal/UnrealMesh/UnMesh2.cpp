@@ -919,7 +919,7 @@ void USkeletalMesh::ConvertWedges(CSkelMeshLod &Lod, const TArray<FVector> &Mesh
 		{
 			PackedWeights[block] = 0;
 		}
-		for (j = 0; j < min(V.NumInfs, NUM_INFLUENCES); j++)
+		for (j = 0; j < std::min(V.NumInfs, NUM_INFLUENCES); j++)
 		{
 			DW.Bone[j]   = V.Bone[j];
 			PackedWeights[j / NUM_INFLUENCES] |= appRound(V.Weight[j] * 255) << ((j % 4) * 8);

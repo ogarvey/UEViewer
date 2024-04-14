@@ -132,14 +132,14 @@ static void MipMap(byte* in, int width, int height)
 	{	\
 		n++;	\
 		r += in[idx]; g += in[idx+1]; b += in[idx+2]; a += in[idx+3];	\
-		am = max(am, in[idx+3]);	\
+		am = std::max(am, static_cast<int>(in[idx+3]));	\
 	}
 #else
 #define PROCESS_PIXEL(idx)	\
 	{	\
 		n++;	\
 		r += in[idx]; g += in[idx+1]; b += in[idx+2]; a += in[idx+3];	\
-		am = max(am, in[idx+3]);	\
+		am = std::max(am, static_cast<int>(in[idx+3]));	\
 	}
 #endif
 			PROCESS_PIXEL(0);

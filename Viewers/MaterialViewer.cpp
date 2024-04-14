@@ -387,7 +387,7 @@ void CMaterialViewer::Draw2D()
 		NonConstMaterial->SetMaterial();
 		int width, height;
 		Window->GetWindowSize(width, height);
-		int w = min(width, height) / 2;
+		int w = std::min(width, height) / 2;
 
 		static CShader shader;
 		if (GUseGLSL)

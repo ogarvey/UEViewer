@@ -236,7 +236,7 @@ void* appRealloc(void* ptr, int newSize)
 	// Allocate new memory block and copy contents
 	int alignment = hdr->align + 1;
 	void* newData = appMallocNoInit(newSize, alignment);
-	memcpy(newData, ptr, min(newSize, oldSize));
+	memcpy(newData, ptr, std::min(newSize, oldSize));
 
 	// Release old memory block
 	hdr->magic--;		// modify to any value

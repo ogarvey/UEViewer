@@ -889,7 +889,7 @@ void FFileWriter::Serialize(void *data, int size)
 		data = OffsetPointer(data, CanCopy);
 		size -= CanCopy;
 		ArPos64 += CanCopy;
-		BufferSize = max(BufferSize, LocalPos + CanCopy);
+		BufferSize = std::max(BufferSize, LocalPos + CanCopy);
 	}
 
 	unguardf("File=%s", ShortName);
@@ -956,7 +956,7 @@ int64 FFileWriter::Tell64() const
 
 int64 FFileWriter::GetFileSize64() const
 {
-	return max(FileSize, FilePos + BufferSize);
+	return std::max(FileSize, FilePos + BufferSize);
 }
 
 bool FFileWriter::IsEof() const

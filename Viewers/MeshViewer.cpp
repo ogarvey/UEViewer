@@ -86,7 +86,7 @@ void CMeshViewer::DisplayUV(const CMeshVertex* Verts, int VertexSize, const CBas
 
 	int width, height;
 	Window->GetWindowSize(width, height);
-	int w = min(width, height);
+	int w = std::min(width, height);
 
 	// add some border
 	int x0 = width - w;
