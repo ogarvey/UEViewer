@@ -16,6 +16,7 @@
 class UIMenu;
 class UIElement;
 class UIBaseDialog;
+class UIGroup;
 
 
 enum ETextAlign
@@ -280,7 +281,7 @@ private:
 // - SetCallback function name depends on VarName
 #define DECLARE_CALLBACK(VarName, ...)				\
 public:												\
-	typedef ::Callback<void(ThisClass*, __VA_ARGS__)> VarName##_t; \
+	typedef ::Callback<void(ThisClass* __VA_OPT__(,) __VA_ARGS__)> VarName##_t; \
 	template<typename CB>							\
 	FORCEINLINE ThisClass& Set##VarName(CB&& cb)	\
 	{												\
@@ -289,7 +290,6 @@ public:												\
 protected:											\
 	VarName##_t		VarName;						\
 private:
-
 
 // Control creation helper.
 // Use this to receive 'Type&' value instead of 'Type*' available with 'new Type' call

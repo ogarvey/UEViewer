@@ -7,6 +7,8 @@
 #define _WIN32_WINDOWS 0x0500		// for IsDebuggerPresent()
 #include <windows.h>
 #include <float.h>					// for _clearfp()
+#else
+#include <windows.h>
 #endif // WIN32_USE_SEH
 
 
@@ -14,7 +16,7 @@
 //#define USE_DBGHELP				1
 //#define EXTRA_UNDECORATE		1		// use different undecorate function, providing better results but not allowing to display static symbols
 //#define DUMP_SEH				1		// for debugging SEH frames
-#define GET_EXTENDED_INFO		1
+//#define GET_EXTENDED_INFO		1
 //#define UNWIND_EBP_FRAMES		1
 
 
@@ -191,7 +193,11 @@ simple:
 
 int appCaptureStackTrace(address_t* buffer, int maxDepth, int framesToSkip)
 {
+#if _MSC_VER
 	return RtlCaptureStackBackTrace(framesToSkip, maxDepth, (void**)buffer, NULL);
+#else
+	return 0;
+#endif
 }
 
 

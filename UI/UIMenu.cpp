@@ -9,7 +9,7 @@
 #undef UNICODE
 
 #include <windows.h>
-#include <ShellAPI.h>				// for ShellExecute
+#include <shellapi.h>				// for ShellExecute
 
 #endif // _WIN32
 
@@ -605,7 +605,7 @@ void UIMenu::Create(bool popup)
 
 int UIMenu::GetNextItemId()
 {
-	return max(GetMaxItemIdRecursive() + 1, FIRST_MENU_ID);
+	return std::max(GetMaxItemIdRecursive() + 1, FIRST_MENU_ID);
 }
 
 void UIMenu::Popup(UIElement* Owner, int x, int y)

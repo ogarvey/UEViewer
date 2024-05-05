@@ -641,7 +641,7 @@ extern bool GUseDebugger;
 
 
 #ifdef _WIN32
-#	if !defined(WINAPI) 	// detect <windows.h>
+#	if !defined(GetTickCount) 	// detect <windows.h>
 	extern "C" {
 		__declspec(dllimport) unsigned long __stdcall GetTickCount();
 	}

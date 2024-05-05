@@ -1034,6 +1034,7 @@ int main(int argc, const char **argv)
 		objectsToLoad.Insert(argObjName, 0);
 		// don't use argObjName beyond this point
 	}
+	bool bShouldLoadObjects = (mainCmd != CMD_Export) || (objectsToLoad.Num() > 0);
 
 #if !HAS_UI
 	if (!packagesToLoad.Num() || !params.Num())
@@ -1176,8 +1177,6 @@ int main(int argc, const char **argv)
 		return 0;					// already displayed when loaded package; extend it?
 	}
 
-	bool bShouldLoadObjects = (mainCmd != CMD_Export) || (objectsToLoad.Num() > 0);
-
 	// load requested objects if any, or fully load everything
 	UObject::BeginLoad();
 	if (objectsToLoad.Num())
@@ -1232,12 +1231,13 @@ int main(int argc, const char **argv)
 	}
 	UObject::EndLoad();
 
-	bool bNoSupportedObjects = !UObject::GObjObjects.Num() && bShouldLoadObjects;
-#if HAS_UI
-	bNoSupportedObjects &= !GApplication.GuiShown;
-#endif
 
-	if (bNoSupportedObjects)
+
+	if (!UObject::GObjObjects.Num() && bShouldLoadObjects
+#if HAS_UI
+		&& !GApplication.GuiShown
+#endif
+	)
 	{
 		appPrintf("\nThe specified package(s) has no supported objects.\n\n");
 	no_objects:

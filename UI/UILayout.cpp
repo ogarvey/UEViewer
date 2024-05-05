@@ -196,8 +196,8 @@ void UIGroup::ComputeLayout()
 		// LeftMargin is used for all controls except first, RightMargin for all controls except last
 		MarginsSizeX += ((child == FirstChild) ? 0 : child->LeftMargin) + ((child->NextChild) ? child->RightMargin : 0);
 		MarginsSizeY += child->TopMargin + child->BottomMargin;
-		MaxWidth = max(spaceX, MaxWidth);
-		MaxHeight = max(spaceY, MaxHeight);
+		MaxWidth = std::max(spaceX, MaxWidth);
+		MaxHeight = std::max(spaceY, MaxHeight);
 	}
 
 	DBG_LAYOUT(">>> do layout: max_w(%d) max_h(%d) frac_w(%g) frac_h(%g)", MaxWidth, MaxHeight, TotalFracWidth, TotalFracHeight);
@@ -431,8 +431,8 @@ void UIPageControl::ComputeLayoutWithBorders(int borderLeft, int borderRight, in
 			h = child->MinHeight;
 		}
 
-		MaxWidth = max(w, MaxWidth);
-		MaxHeight = max(h, MaxHeight);
+		MaxWidth = std::max(w, MaxWidth);
+		MaxHeight = std::max(h, MaxHeight);
 	}
 
 	MaxWidth += borderLeft + borderRight;

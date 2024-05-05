@@ -18,7 +18,7 @@ public:
 		const char* log;
 		if (s)
 		{
-			appStrncpyz(message, GError.History, min(s - GError.History + 1, ARRAY_COUNT(message)));
+			appStrncpyz(message, GError.History, std::min(static_cast<size_t>(s - GError.History + 1), ARRAY_COUNT(message)));
 			log = s + 1;
 		}
 		else

@@ -42,7 +42,7 @@ public:
 protected:
 
 	bool bInitialized = false;
-#ifdef _WIN32
+#ifdef _MSC_VER
 	enum { CriticalSectionSize = sizeof(void*)*4 + sizeof(int)*2 }; // sizeof(RTL_CRITICAL_SECTION)
 	char data[CriticalSectionSize];
 #else
@@ -65,7 +65,7 @@ public:
 
 protected:
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	void* data;
 #else
 	enum { SemSize = sizeof(size_t) * 4 };
@@ -98,7 +98,7 @@ public:
 	static volatile int NumThreads;
 
 protected:
-#ifdef _WIN32
+#ifdef _MSC_VER
 	static unsigned __stdcall ThreadFunc(void* param);
 
 	uintptr_t thread;
@@ -115,7 +115,7 @@ protected:
 	Atimics
 -----------------------------------------------------------------------------*/
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 
 #undef InterlockedIncrement
 #undef InterlockedDecrement
@@ -195,8 +195,9 @@ FORCEINLINE uint64 InterlockedAdd(volatile uint64* Value, int64 Amount)
 
 #endif // _WIN64
 
-#else // _WIN32
+#else // _MSC_VER
 
+#undef InterlockedIncrement
 FORCEINLINE int8 InterlockedIncrement(volatile int8* Value)
 {
 	return __sync_fetch_and_add(Value, 1) + 1;
@@ -215,6 +216,7 @@ FORCEINLINE int32 InterlockedIncrement(volatile uint32* Value)
 	return __sync_fetch_and_add(Value, 1) + 1;
 }
 
+#undef InterlockedDecrement
 FORCEINLINE int8 InterlockedDecrement(volatile int8* Value)
 {
 	return __sync_fetch_and_sub(Value, 1) - 1;
@@ -263,7 +265,7 @@ FORCEINLINE uint64 InterlockedAdd(volatile uint64* Value, int64 Amount)
 	return __sync_fetch_and_add(Value, Amount);
 }
 
-#endif // _WIN32
+#endif // _MSC_VER
 
 /*-----------------------------------------------------------------------------
 	Thread pool

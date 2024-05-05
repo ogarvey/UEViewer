@@ -9,9 +9,9 @@
 #undef UNICODE
 
 #include <windows.h>
-#include <CommCtrl.h>
-#include <ShellAPI.h>				// for ShellExecute
-#include <Shlwapi.h>				// for DllGetVersion stuff
+#include <commctrl.h>
+#include <shellapi.h>				// for ShellExecute
+#include <shlwapi.h>				// for DllGetVersion stuff
 #endif // _WIN32
 
 #include "BaseDialog.h"
@@ -91,7 +91,7 @@ static void InitUXTheme()
 		HMODULE hDll = LoadLibrary("uxtheme.dll");
 		if (hDll == NULL) return;
 	#define GET(func)			\
-		{ void* fn = GetProcAddress(hDll, #func); *(void**)&func = fn; }
+		{ FARPROC fn = GetProcAddress(hDll, #func); *(FARPROC*)&func = fn; }
 		GET(SetWindowTheme)
 //		GET(EnableThemeDialogTexture)
 		GET(IsAppThemed)
@@ -905,7 +905,7 @@ void UICheckbox::Create(UICreateContext& ctx)
 
 	// add DEFAULT_CHECKBOX_HEIGHT to 'Width' to include checkbox rect
 	UIRect ctlRect = Rect;
-	ctlRect.Width = min(checkboxWidth + DEFAULT_CHECKBOX_HEIGHT, Rect.Width);
+	ctlRect.Width = std::min(checkboxWidth + DEFAULT_CHECKBOX_HEIGHT, Rect.Width);
 
 	Wnd = ctx.MakeWindow(this, WC_BUTTON, *Label, WS_TABSTOP | BS_AUTOCHECKBOX, 0, &ctlRect);
 
@@ -988,7 +988,7 @@ void UIRadioButton::Create(UICreateContext& ctx)
 
 	// add DEFAULT_CHECKBOX_HEIGHT to 'Width' to include checkbox rect
 	UIRect ctlRect = Rect;
-	ctlRect.Width = min(radioWidth + DEFAULT_CHECKBOX_HEIGHT, Rect.Width);
+	ctlRect.Width = std::min(radioWidth + DEFAULT_CHECKBOX_HEIGHT, Rect.Width);
 
 	Wnd = ctx.MakeWindow(this, WC_BUTTON, *Label, WS_TABSTOP | BS_AUTORADIOBUTTON, 0, &ctlRect);
 
@@ -2832,7 +2832,7 @@ void UICheckboxGroup::Create(UICreateContext& ctx)
 	UIRect ctlRect(
 		Rect.X + checkboxOffset,
 		Rect.Y,
-		min(checkboxWidth + DEFAULT_CHECKBOX_HEIGHT, Rect.Width - checkboxOffset),
+		std::min(checkboxWidth + DEFAULT_CHECKBOX_HEIGHT, Rect.Width - checkboxOffset),
 		DEFAULT_CHECKBOX_HEIGHT);
 
 	// Adjust checkbox Y
@@ -2879,7 +2879,7 @@ void UICheckboxGroup::UpdateLayout()
 
 	int checkboxOffset = (Flags & GROUP_NO_BORDER) ? 0 : GROUP_INDENT;
 
-	MoveWindow(CheckboxWnd, Rect.X + checkboxOffset, Rect.Y - 2, min(checkboxWidth + DEFAULT_CHECKBOX_HEIGHT, Rect.Width - checkboxOffset), DEFAULT_CHECKBOX_HEIGHT, FALSE);
+	MoveWindow(CheckboxWnd, Rect.X + checkboxOffset, Rect.Y - 2, std::min(checkboxWidth + DEFAULT_CHECKBOX_HEIGHT, Rect.Width - checkboxOffset), DEFAULT_CHECKBOX_HEIGHT, FALSE);
 }
 
 

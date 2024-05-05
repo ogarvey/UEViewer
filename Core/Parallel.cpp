@@ -2,12 +2,12 @@
 
 #if THREADING
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 
-#include <Windows.h>
+#include <windows.h>
 #include <process.h> // _beginthread
 
-#endif // _WIN32
+#endif // _MSC_VER
 
 #include "Parallel.h"
 
@@ -19,7 +19,7 @@ volatile int CThread::NumThreads = 0;
 	Generic classes
 -----------------------------------------------------------------------------*/
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 
 // Windows.h has InterlockedIncrement/Decrement defines, hide then
 #undef InterlockedIncrement
@@ -243,13 +243,19 @@ void CThread::Start()
 {
 	static int MaxThreads = -1;
 	if (MaxThreads < 0)
+	{
+#ifdef _SC_NPROCESSORS_ONLN
 		MaxThreads = sysconf(_SC_NPROCESSORS_ONLN);
+#else
+		MaxThreads = 8; // fallback for MinGW
+#endif
+	}
     return MaxThreads;
 }
 
 #endif // windows / linux
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 /*static*/ unsigned __stdcall CThread::ThreadFunc(void* param)
 #else
 /*static*/ void CThread::ThreadFunc(void* param)
@@ -258,13 +264,13 @@ void CThread::Start()
 	TRY {
 		CThread* thread = (CThread*)param;
 
-#ifndef _WIN32
+#ifndef _MSC_VER
 		// Wait for thread to start. Pthreads doesn't have "create suspended" flag, so wait manually.
 		while (!thread->bStarted)
 		{
 			Sleep(0);
 		}
-#endif // !_WIN32
+#endif // !_MSC_VER
 
 		// Execute thread function
 		thread->Run();
@@ -290,7 +296,7 @@ void CThread::Start()
 		exit(1);
 	}
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	return 0;
 #endif
 }
