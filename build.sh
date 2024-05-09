@@ -36,8 +36,13 @@ while [ "$1" ]; do
 			single_file=${2//\\//}
 			shift 2
 			;;
+		--mingw64)
+			# compile a single file from VSCode, should replace slashes
+			PLATFORM="mingw64"
+			shift
+			;;
 		*)
-			echo "Usage: build.sh [--debug] [--profile] [--vc <version>] [--64] [--exe <file.exe>] [--file <cpp file>]"
+			echo "Usage: build.sh [--debug] [--profile] [--vc <version>] [--64] [--mingw64] [--exe <file.exe>] [--file <cpp file>]"
 			exit
 			;;
 	esac
@@ -63,7 +68,7 @@ function SetupDefaultProject()
 		ExeName="umodel"
 		[ "$debug" ] && ExeName+="-debug"
 		[ "$profile" ] && ExeName+="-profile"
-		[ "$PLATFORM" == "vc-win64" ] && ExeName+="_64"
+		[ "$PLATFORM" == "vc-win64" ] || [ "$PLATFORM" == "mingw64" ] && ExeName+="_64"
 	fi
 	GENMAKE_OPTIONS+=" EXE_NAME=$ExeName"
 }
@@ -107,8 +112,11 @@ function GetBuildNumber()
 
 function DetectBuildPlatform()
 {
+	if [ "$PLATFORM" == "mingw64" ]; then
+		# cross-compile, avoid detecting OS
+		echo "mingw64 cross"
 	# force PLATFORM=linux under Linux OS
-	if [ "$OSTYPE" == "linux-gnu" ] || [ "$OSTYPE" == "linux" ]; then
+	elif [ "$OSTYPE" == "linux-gnu" ] || [ "$OSTYPE" == "linux" ]; then
 		# PLATFORM="linux" - old case, now we'll recognize 32 or 64 bit OS for proper use of oodle.project
 		if [ $(uname -m) == 'x86_64' ]; then
 			PLATFORM="linux64"
@@ -255,9 +263,9 @@ case "$PLATFORM" in
 	"vc-win32"|"vc-win64")
 		Make $makefile $target || exit 1
 		;;
-	"mingw32"|"cygwin")
+	"mingw32"|"mingw64"|"cygwin")
 		PATH=/bin:/usr/bin:$PATH					# configure paths for Cygwin
-		gccfilt make -f $makefile $target || exit 1
+		make -f $makefile $target || exit 1
 		;;
 	linux*)
 		make -j 4 -f $makefile $target || exit 1	# use 4 jobs for build

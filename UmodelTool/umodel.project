@@ -8,7 +8,7 @@ UMODEL=UmodelTool
 
 INCLUDES += $UMODEL UI
 
-!if "$PLATFORM" eq "win32" || "$PLATFORM" eq "win64"
+!if "$PLATFORM" eq "win32" || "$PLATFORM" eq "win64" || "$PLATFORM" eq "mingw64"
 	IS_WINDOWS = 1
 !else
 	IS_WINDOWS = 0

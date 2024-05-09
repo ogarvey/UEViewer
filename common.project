@@ -28,7 +28,7 @@ WARNINGS   =				# warnings for our source code (i.e. excluding thirs-parties), e
 
 USE_SYSTEM_LIBS = 0
 
-CPP_STD = c++14				# allow modern C++ features
+CPP_STD = c++20				# allow modern C++ features
 							#!! todo: add standard option for that
 							#!! todo: the standard has been changed for clang on macOS, check for "CPP_STD" below!
 
@@ -61,7 +61,15 @@ CPP_STD = c++14				# allow modern C++ features
 		STDLIBS += dl	# dlopen() and friends
 		STDLIBS += pthread
 	!endif
-	!if "$PLATFORM" ne "osx"
+	!if "$PLATFORM" eq "win64"
+		STDLIBS += opengl32
+		STDLIBS += gdi32
+		STDLIBS += comctl32
+		STDLIBS += comdlg32
+		STDLIBS += ole32
+		STDLIBS += shlwapi
+		STDLIBS += uuid
+	!elif "$PLATFORM" ne "osx"
 		STDLIBS += GL
 	!else
 		CPP_STD = c++2a									# https://github.com/gildor2/UEViewer/issues/183#issuecomment-846745134
