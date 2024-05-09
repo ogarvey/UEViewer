@@ -92,6 +92,13 @@ full testing. Therefore, some features are disabled:
 
 In other words, UE Viewer on macOS works just like a simple command-line exporter utility.
 
+### Cross-compile for Windows 64-bit from Linux
+It is also possible to create builds for 64-bit Windows from Linux with MinGW. To activate this mode use the build script with
+the following option:
+
+	build.sh --mingw64
+
+You need to install mingw64 cross-compile version (i.e. linux native, not running under Wine) and the mingw64 versions of used libraries.
 
 Using IDE
 ---------
