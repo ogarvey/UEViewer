@@ -123,7 +123,7 @@ function DetectBuildPlatform()
 		else
 			PLATFORM="linux32"
 		fi
-	elif [ "$OSTYPE" == "darwin"* ]; then
+	elif [[ "$OSTYPE" == "darwin"* ]]; then
 		PLATFORM=osx
 	else
 		[ "$PLATFORM" ] || PLATFORM="vc-win32"
