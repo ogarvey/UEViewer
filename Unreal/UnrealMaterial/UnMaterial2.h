@@ -778,6 +778,24 @@ public:
 #endif
 };
 
+class UOpacityModifier : public UModifier
+{
+	DECLARE_CLASS(UOpacityModifier, UModifier);
+public:
+	UMaterial		*Opacity;
+	bool			bOverrideTexModifier;
+
+	UOpacityModifier() :
+		Opacity(NULL),
+		bOverrideTexModifier(false)
+	{}
+
+	BEGIN_PROP_TABLE
+		PROP_OBJ(Opacity)
+		PROP_BOOL(bOverrideTexModifier)
+	END_PROP_TABLE
+};
+
 class UColorModifier : public UModifier
 {
 	DECLARE_CLASS(UColorModifier, UModifier);
@@ -1520,6 +1538,7 @@ public:
 	REGISTER_CLASS(UCombiner)			\
 	REGISTER_CLASS(UTexture)			\
 	REGISTER_CLASS(UCubemap)			\
+	REGISTER_CLASS(UOpacityModifier)	\
 	REGISTER_CLASS(UFinalBlend)			\
 	REGISTER_CLASS(FMaterialSequenceItem)	\
 	REGISTER_CLASS(UMaterialSequence)	\
