@@ -55,7 +55,7 @@ const CPixelFormatInfo PixelFormatInfo[] =
 	{ 0,						0,			0,			0,			0,			0,		0,		"UNKNOWN"	},	// TPF_UNKNOWN
 	{ 0,						1,			1,			1,			0,			0,		0,		"P8"		},	// TPF_P8
 	{ 0,						1,			1,			1,			64,			64,		0,		"G8"		},	// TPF_G8
-//	{																										},	// TPF_G16
+	{ 0,						1,			1,			2,			0,			0,		0,		"G16"		},	// TPF_G16
 	{ 0,						1,			1,			3,			0,			0,		0,		"RGB8"		},	// TPF_RGB8
 	{ 0,						1,			1,			4,			32,			32,		0,		"RGBA8"		},	// TPF_RGBA8
 	{ 0,						1,			1,			4,			32,			32,		0,		"BGRA8"		},	// TPF_BGRA8
@@ -161,6 +161,20 @@ byte* CTextureData::Decompress(int MipLevel, int Slice)
 				*d++ = c.G;
 				*d++ = c.B;
 				*d++ = c.A;
+			}
+		}
+		return dst;
+	case TPF_G16:
+		{
+			const unsigned short *s = reinterpret_cast<const unsigned short*>(Data);
+			byte *d = dst;
+			for (int i = 0; i < USize * VSize; i++)
+			{
+				*d++ = (*s >> 8) & 0xFF;
+				*d++ = (*s >> 0) & 0XFF;
+				*d++ = 0;
+				*d++ = 0xFF;
+				++s;
 			}
 		}
 		return dst;

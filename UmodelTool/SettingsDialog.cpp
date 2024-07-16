@@ -162,6 +162,7 @@ UIElement& UISettingsDialog::MakeExportOptions()
 			+ NewControl(UICheckbox, "Export compressed textures to dds format", &Opt.Export.ExportDdsTexture)
 		]
 		+ NewControl(UICheckbox, "Don't overwrite already exported files", &Opt.Export.DontOverwriteFiles)
+		+ NewControl(UICheckbox, "Don't export linked objects", &Opt.Export.DontExportLinked)
 		;
 }
 

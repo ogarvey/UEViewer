@@ -19,28 +19,30 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 	if (Mat->IsTextureCube())
 	{
 		ExportCubemap(Mat);
-		return;
 	}
 
 	if (Mat->IsTexture())
 	{
 		ExportTexture(Mat);
-		return;
 	}
 
 	//todo: handle Mat->IsTexture(), Mat->IsTextureCube() to select exporter code
 	//todo: remove separate texture handling from Main.cpp exporter registraction
 
 	TArray<UUnrealMaterial*> AllTextures;
-	Mat->AppendReferencedTextures(AllTextures, false);
+	if (!GDontExportLinked)
+	{
+		Mat->AppendReferencedTextures(AllTextures, false);
+	}
 
 	CMaterialParams Params;
 	Mat->GetParams(Params);
+
 	if ((Params.IsNull() || Params.Diffuse == Mat) && AllTextures.Num() == 0)
 	{
 		// empty/unknown material, or material itself is a texture
-		appPrintf("Ignoring %s'%s' due to empty parameters\n", Mat->GetClassName(), Mat->Name);
-		return;
+		// appPrintf("Ignoring %s'%s' due to empty parameters\n", Mat->GetClassName(), Mat->Name);
+		// return;
 	}
 
 	FArchive* Ar = CreateExportArchive(Mat, EFileArchiveOptions::TextFile, "%s.mat", Mat->Name);
@@ -55,14 +57,18 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 		ToExport.AddUnique(Params.Arg); \
 	}
 
-	PROC(Diffuse);
-	PROC(Normal);
-	PROC(Specular);
-	PROC(SpecPower);
-	PROC(Opacity);
-	PROC(Emissive);
-	PROC(Cube);
-	PROC(Mask);
+	if (!GDontExportLinked)
+	{
+		PROC(Diffuse);
+		PROC(Normal);
+		PROC(Specular);
+		PROC(SpecPower);
+		PROC(Opacity);
+		PROC(Emissive);
+		PROC(Cube);
+		PROC(Mask);
+	}
+
 
 	// Dump material properties to a separate file
 	FArchive* PropAr = CreateExportArchive(Mat, EFileArchiveOptions::TextFile, "%s.props.txt", Mat->Name);

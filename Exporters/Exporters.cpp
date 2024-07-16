@@ -17,6 +17,8 @@ bool GExportInProgress   = false;
 
 bool GDummyExport        = false;
 
+bool GDontExportLinked   = false;
+
 
 /*-----------------------------------------------------------------------------
 	Exporter function management

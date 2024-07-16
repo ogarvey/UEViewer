@@ -90,7 +90,7 @@ enum ETexturePixelFormat
 	TPF_UNKNOWN,
 	TPF_P8,				// 8-bit paletted
 	TPF_G8,				// 8-bit grayscale
-//	TPF_G16,			// 16-bit grayscale (terrain heightmaps)
+	TPF_G16,			// 16-bit grayscale (terrain heightmaps)
 	TPF_RGB8,
 	TPF_RGBA8,			// 32-bit texture
 	TPF_BGRA8,			// 32-bit texture

@@ -265,6 +265,10 @@ class UConstantMaterial : public URenderedMaterial
 	DECLARE_CLASS(UConstantMaterial, URenderedMaterial);
 };
 
+class UVertexColor : public URenderedMaterial
+{
+	DECLARE_CLASS(UVertexColor, URenderedMaterial);
+};
 
 class UConstantColor : public UConstantMaterial
 {
@@ -277,6 +281,44 @@ public:
 	END_PROP_TABLE
 };
 
+enum EColorFadeType
+{
+	FC_Linear = 0,
+	FC_Sinusoidal = 1
+};
+
+_ENUM(EColorFadeType)
+{
+	_E(FC_Linear),
+	_E(FC_Sinusoidal)
+};
+
+class UFadeColor : public UConstantMaterial
+{
+	DECLARE_CLASS(UFadeColor, UConstantMaterial);
+public:
+	UFadeColor() :
+		Color1(0, 0, 0, 0),
+		Color2(0, 0, 0, 0),
+		FadePeriod(0.f),
+		FadePhase(0.0f),
+		ColorFadeType(FC_Linear)
+	{}
+
+	FColor Color1;
+	FColor Color2;
+	float FadePeriod;
+	float FadePhase;
+	EColorFadeType ColorFadeType;
+
+	BEGIN_PROP_TABLE
+		PROP_COLOR(Color1)
+		PROP_COLOR(Color2)
+		PROP_FLOAT(FadePeriod)
+		PROP_FLOAT(FadePhase)
+		PROP_ENUM2(ColorFadeType, EColorFadeType)
+	END_PROP_TABLE
+};
 
 enum ETextureFormat
 {
@@ -736,6 +778,39 @@ public:
 #endif
 };
 
+class UOpacityModifier : public UModifier
+{
+	DECLARE_CLASS(UOpacityModifier, UModifier);
+public:
+	UMaterial		*Opacity;
+	bool			bOverrideTexModifier;
+
+	UOpacityModifier() :
+		Opacity(NULL),
+		bOverrideTexModifier(false)
+	{}
+
+	BEGIN_PROP_TABLE
+		PROP_OBJ(Opacity)
+		PROP_BOOL(bOverrideTexModifier)
+	END_PROP_TABLE
+};
+
+class UColorModifier : public UModifier
+{
+	DECLARE_CLASS(UColorModifier, UModifier);
+public:
+	FColor	Color;
+	bool	RenderTwoSided;
+	bool 	AlphaBlend;
+
+	BEGIN_PROP_TABLE
+		PROP_COLOR(Color)
+		PROP_BOOL(RenderTwoSided)
+		PROP_BOOL(AlphaBlend)
+	END_PROP_TABLE
+};
+
 
 //?? NOTE: Bioshock EFrameBufferBlending is used for UShader and UFinalBlend, plus it has different values
 enum EFrameBufferBlending
@@ -810,6 +885,91 @@ public:
 #endif
 };
 
+enum EMaterialSequenceTriggerActon
+{
+    MSTA_Ignore             =0,
+    MSTA_Reset              =1,
+    MSTA_Pause              =2,
+    MSTA_Stop               =3,
+    MSTA_MAX                =4,
+};
+
+_ENUM(EMaterialSequenceTriggerActon)
+{
+	_E(MSTA_Ignore),
+	_E(MSTA_Reset),
+	_E(MSTA_Pause),
+	_E(MSTA_Stop),
+};
+
+enum EMaterialSequenceAction
+{
+    MSA_ShowMaterial        =0,
+    MSA_FadeToMaterial      =1,
+    MSA_MAX                 =2,
+};
+
+_ENUM(EMaterialSequenceAction)
+{
+	_E(MSA_ShowMaterial),
+	_E(MSA_FadeToMaterial),
+};
+
+struct FMaterialSequenceItem
+{
+	UUnrealMaterial*	Material;
+	float				Time;
+	EMaterialSequenceAction	Action;
+
+#if DECLARE_VIEWER_PROPS
+	DECLARE_STRUCT(FMaterialSequenceItem)
+	BEGIN_PROP_TABLE
+		PROP_OBJ(Material)
+		PROP_FLOAT(Time)
+		PROP_ENUM2(Action, EMaterialSequenceAction)
+	END_PROP_TABLE
+#endif // DECLARE_VIEWER_PROPS
+};
+
+class UMaterialSequence : public UModifier
+{
+	DECLARE_CLASS(UMaterialSequence, UModifier);
+public:
+	TArray<FMaterialSequenceItem> SequenceItems;
+	EMaterialSequenceTriggerActon TriggerAction;
+	bool Loop;
+	bool Paused;
+	float CurrentTime;
+	float LastTime;
+	float TotalTime;
+
+	BEGIN_PROP_TABLE
+		PROP_ARRAY(SequenceItems, "FMaterialSequenceItem")
+		PROP_ENUM2(TriggerAction, EMaterialSequenceTriggerActon)
+		PROP_BOOL(Loop)
+		PROP_BOOL(Paused)
+		PROP_FLOAT(CurrentTime)
+		PROP_FLOAT(LastTime)
+		PROP_FLOAT(TotalTime)
+	END_PROP_TABLE
+};
+
+class UMaterialSwitch : public UModifier
+{
+	DECLARE_CLASS(UMaterialSwitch, UModifier);
+public:
+	int Current;
+	TArray<UUnrealMaterial*>	Materials;
+
+	UMaterialSwitch() :
+		Current(0)
+	{}
+
+	BEGIN_PROP_TABLE
+		PROP_INT(Current)
+		PROP_ARRAY(Materials, PropType::UObject)
+	END_PROP_TABLE
+};
 
 enum EColorOperation
 {
@@ -890,7 +1050,6 @@ public:
 #endif
 };
 
-
 enum ETexCoordSrc
 {
 	TCS_Stream0,
@@ -961,6 +1120,20 @@ public:
 	END_PROP_TABLE
 };
 
+class UTexCoordSource : public UTexModifier
+{
+	DECLARE_CLASS(UTexCoordSource, UTexModifier);
+public:
+	int				SourceChannel;
+
+	UTexCoordSource()
+	:	SourceChannel(1)
+	{}
+
+	BEGIN_PROP_TABLE
+		PROP_INT(SourceChannel)
+	END_PROP_TABLE
+};
 
 enum ETexEnvMapType
 {
@@ -1142,6 +1315,24 @@ public:
 	{}
 };
 
+class UVariableTexPanner : public UTexModifier
+{
+	DECLARE_CLASS(UVariableTexPanner, UTexModifier)
+public:
+	FRotator	PanDirection;
+	float		PanRate;
+	FMatrix		M;
+	float		LastTime;
+	float		PanOffset;
+
+	BEGIN_PROP_TABLE
+		PROP_ROTATOR(PanDirection)
+		PROP_FLOAT(PanRate)
+		PROP_DROP(M)
+		PROP_DROP(LastTime)
+		PROP_DROP(PanOffset)
+	END_PROP_TABLE
+};
 
 #if BIOSHOCK
 
@@ -1338,19 +1529,28 @@ public:
 
 
 #define REGISTER_MATERIAL_CLASSES		\
+	REGISTER_CLASS(UColorModifier)		\
 	REGISTER_CLASS(UConstantColor)		\
+	REGISTER_CLASS(UFadeColor)			\
 	REGISTER_CLASS(UBitmapMaterial)		\
 	REGISTER_CLASS(UPalette)			\
 	REGISTER_CLASS(UShader)				\
 	REGISTER_CLASS(UCombiner)			\
 	REGISTER_CLASS(UTexture)			\
 	REGISTER_CLASS(UCubemap)			\
+	REGISTER_CLASS(UOpacityModifier)	\
 	REGISTER_CLASS(UFinalBlend)			\
+	REGISTER_CLASS(FMaterialSequenceItem)	\
+	REGISTER_CLASS(UMaterialSequence)	\
+	REGISTER_CLASS(UMaterialSwitch)		\
+	REGISTER_CLASS(UTexCoordSource)		\
 	REGISTER_CLASS(UTexEnvMap)			\
 	REGISTER_CLASS(UTexOscillator)		\
 	REGISTER_CLASS(UTexPanner)			\
 	REGISTER_CLASS(UTexRotator)			\
-	REGISTER_CLASS(UTexScaler)
+	REGISTER_CLASS(UTexScaler)			\
+	REGISTER_CLASS(UVariableTexPanner)	\
+	REGISTER_CLASS(UVertexColor)
 
 #define REGISTER_MATERIAL_CLASSES_BIO	\
 	REGISTER_CLASS(FMaskMaterial)		\
@@ -1365,13 +1565,16 @@ public:
 	REGISTER_ENUM(ETexClampMode)		\
 	REGISTER_ENUM(EOutputBlending)		\
 	REGISTER_ENUM(EFrameBufferBlending)	\
+	REGISTER_ENUM(EColorFadeType)		\
 	REGISTER_ENUM(EColorOperation)		\
 	REGISTER_ENUM(EAlphaOperation)		\
 	REGISTER_ENUM(ETexCoordSrc)			\
 	REGISTER_ENUM(ETexCoordCount)		\
 	REGISTER_ENUM(ETexEnvMapType)		\
 	REGISTER_ENUM(ETexOscillationType)	\
-	REGISTER_ENUM(ETexRotationType)
+	REGISTER_ENUM(ETexRotationType)		\
+	REGISTER_ENUM(EMaterialSequenceAction)	\
+	REGISTER_ENUM(EMaterialSequenceTriggerActon)	\
 
 
 #endif // __UNMATERIAL2_H__

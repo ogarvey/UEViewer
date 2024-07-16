@@ -1894,7 +1894,7 @@ void UStaticMesh::ConvertMesh()
 	Lod->NumTexCoords = NumTexCoords;
 
 	Lod->AllocateVerts(NumVerts);
-	if (ColorStream.Color.Num() && UseVertexColor)
+	if (ColorStream.Color.Num())
 		Lod->AllocateVertexColorBuffer();
 
 	bool PrintedWarning = false;

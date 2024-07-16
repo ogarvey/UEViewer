@@ -510,6 +510,9 @@ ETexturePixelFormat UTexture::GetTexturePixelFormat() const
 		case TEXF_L8:
 			intFormat = TPF_G8;
 			break;
+		case TEXF_G16:
+			intFormat = TPF_G16;
+			break;
 		case TEXF_CxV8U8:
 			intFormat = TPF_V8U8_2;
 			break;

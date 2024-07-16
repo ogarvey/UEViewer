@@ -535,20 +535,26 @@ void ExportCubemap(const UUnrealMaterial* Tex)
 
 	if (Tex->IsA("Cubemap"))
 	{
-		const UCubemap* TexCube = static_cast<const UCubemap*>(Tex);
-		for (int Side = 0; Side < 6; Side++)
-			ExportObject(TexCube->Faces[Side]);
+		if (!GDontExportLinked)
+		{
+			const UCubemap* TexCube = static_cast<const UCubemap*>(Tex);
+			for (int Side = 0; Side < 6; Side++)
+				ExportObject(TexCube->Faces[Side]);
+		}
 	}
 #if UNREAL3
 	else if (Tex->IsA("TextureCube3"))
 	{
-		const UTextureCube3* TexCube = static_cast<const UTextureCube3*>(Tex);
-		ExportObject(TexCube->FacePosX);
-		ExportObject(TexCube->FaceNegX);
-		ExportObject(TexCube->FacePosY);
-		ExportObject(TexCube->FaceNegY);
-		ExportObject(TexCube->FacePosZ);
-		ExportObject(TexCube->FaceNegZ);
+		if (!GDontExportLinked)
+		{
+			const UTextureCube3* TexCube = static_cast<const UTextureCube3*>(Tex);
+			ExportObject(TexCube->FacePosX);
+			ExportObject(TexCube->FaceNegX);
+			ExportObject(TexCube->FacePosY);
+			ExportObject(TexCube->FaceNegY);
+			ExportObject(TexCube->FacePosZ);
+			ExportObject(TexCube->FaceNegZ);
+		}
 	}
 #endif // UNREAL3
 #if UNREAL4
